@@ -50,30 +50,31 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-[#EDF2F7]">
 
-      {/* LEFT / HEADER */}
-      <div className="bg-[#D7DEE8] px-6 py-10 md:p-12 flex flex-col justify-between">
-        <div className="bg-white rounded-full px-6 py-3 inline-flex items-center gap-2 shadow w-fit">
+      {/* LEFT */}
+      <div className="bg-[#D7DEE8] px-8 py-12 flex flex-col justify-between">
+        <div className="bg-white rounded-full px-6 py-3 inline-flex gap-2 shadow w-fit">
           <span>★</span>
           <span className="font-semibold">LOGO</span>
         </div>
 
-        <div className="mt-10 md:mt-0">
+        <div className="max-w-md">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             Daftar Akun
           </h1>
-          <p className="text-gray-700 max-w-sm text-sm md:text-base">
-            Lengkapi data sekolah untuk mulai menggunakan platform.
+          <p className="text-gray-700 text-sm md:text-base">
+            Lengkapi data sekolah untuk mulai menggunakan platform
+            crowdfunding pendidikan wilayah 3T.
           </p>
         </div>
       </div>
 
-      {/* RIGHT / FORM */}
-      <div className="flex items-center justify-center px-4 py-10 md:px-10">
+      {/* RIGHT */}
+      <div className="flex items-center justify-center px-6 py-10 md:px-16">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-md space-y-4 bg-white"
+          className="w-full max-w-lg space-y-4"
         >
           <Input label="NPSN" name="npsn" onChange={handleChange} />
           <Input label="Nama Sekolah" name="schoolName" onChange={handleChange} />
@@ -100,13 +101,20 @@ export default function RegisterPage() {
           <button className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-900 transition">
             Daftar
           </button>
+
+          <p className="text-center text-sm text-gray-600 mt-4">
+            Sudah punya akun?{' '}
+            <a href="/login" className="font-semibold text-black hover:underline">
+              Masuk
+            </a>
+          </p>
         </form>
       </div>
     </div>
   );
 }
 
-/* ================= COMPONENTS ================= */
+/* ===== COMPONENTS (LOGIKA TETAP) ===== */
 
 function Input({ label, name, type = 'text', onChange }: any) {
   return (
@@ -117,16 +125,10 @@ function Input({ label, name, type = 'text', onChange }: any) {
         name={name}
         onChange={onChange}
         className="
-          w-full
-          bg-gray-100
-          rounded-lg
-          px-4
-          py-3
-          mt-1
-          text-sm
-          focus:outline-none
-          focus:ring-2
-          focus:ring-black
+          w-full bg-white rounded-lg
+          px-4 py-3 mt-1 text-sm
+          border border-gray-200
+          focus:outline-none focus:ring-2 focus:ring-black
         "
       />
     </div>
@@ -143,16 +145,10 @@ function InputPassword({ label, name, show, toggle, onChange }: any) {
           name={name}
           onChange={onChange}
           className="
-            w-full
-            bg-gray-100
-            rounded-lg
-            px-4
-            py-3
-            pr-12
-            text-sm
-            focus:outline-none
-            focus:ring-2
-            focus:ring-black
+            w-full bg-white rounded-lg
+            px-4 py-3 pr-12 text-sm
+            border border-gray-200
+            focus:outline-none focus:ring-2 focus:ring-black
           "
         />
         <button
