@@ -115,9 +115,7 @@ export default function LaporanPage() {
             </h1>
 
             {verified === null && (
-              <p className="text-xs text-gray-400">
-                memeriksa verifikasi...
-              </p>
+              <p className="text-xs text-gray-400">memeriksa verifikasi...</p>
             )}
 
             {verified === true && (
@@ -216,10 +214,9 @@ function MenuLink({ href, icon, label, active }: any) {
     <Link
       href={href}
       className={`flex items-center gap-3 px-4 py-2 rounded-lg transition
-        ${
-          active
-            ? 'bg-indigo-100 text-indigo-600 font-medium'
-            : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
+        ${active
+          ? 'bg-indigo-100 text-indigo-600 font-medium'
+          : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
         }`}
     >
       {icon}
@@ -241,15 +238,17 @@ function TwoCol({ children }: any) {
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>;
 }
 
+/* === AUTO FIELD: ENTER + AUTO HEIGHT + NO SCROLLBAR === */
 function AutoField({ label, value, disabled, placeholder }: any) {
   return (
     <div>
       <label className="text-sm font-medium">{label}</label>
-      <input
+      <textarea
+        rows={1}
         defaultValue={value}
         disabled={disabled}
         placeholder={placeholder}
-        className={`w-full mt-1 px-4 py-2 h-[42px] rounded-lg outline-none
+        className={`w-full mt-1 px-4 py-2 h-[42px] rounded-lg resize-none outline-none
           ${disabled ? 'bg-gray-200 text-gray-600 cursor-not-allowed' : 'bg-gray-100'}
         `}
       />
