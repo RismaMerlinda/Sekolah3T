@@ -144,7 +144,7 @@ export default function ProfilPage() {
             <MenuLink href="/ringkasan" label="Ringkasan" icon={<BarChart2 size={18} />} />
             <MenuLink href="/laporan" label="Laporan" icon={<FileText size={18} />} />
             <MenuLink href="/timeline" label="Timeline" icon={<Clock size={18} />} />
-            <MenuLink href="/progres" label="Progres" icon={<TrendingUp size={18} />} />
+            <MenuLink href="/progress" label="Progress" icon={<TrendingUp size={18} />} />
             <MenuLink href="/profil" label="Profil" icon={<User size={18} />} active />
           </nav>
         </div>

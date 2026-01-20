@@ -170,7 +170,7 @@ export default function LandingPage() {
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl bg-white/75 border border-[#B2F5EA] p-4">
                       <div className="text-xs text-[#4A6F6C]">Tracking</div>
-                      <div className="mt-1 text-sm font-bold text-[#0F2F2E]">Laporan & progres</div>
+                      <div className="mt-1 text-sm font-bold text-[#0F2F2E]">Laporan & progress</div>
                     </div>
                     <div className="rounded-2xl bg-white/75 border border-[#B2F5EA] p-4">
                       <div className="text-xs text-[#4A6F6C]">Keamanan</div>
@@ -223,12 +223,12 @@ export default function LandingPage() {
             <h2 className="text-2xl font-extrabold">Tentang Platform</h2>
             <p className="mt-3 text-[#4A6F6C]">
               Platform ini menghubungkan donatur dengan kebutuhan sekolah 3T secara transparan.
-              Setiap campaign punya target, timeline, dan laporan progres yang bisa dilihat publik.
+              Setiap campaign punya target, timeline, dan laporan progress yang bisa dilihat publik.
             </p>
 
             <ul className="mt-6 space-y-3 text-sm text-[#4A6F6C]">
               <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#40E0D0]" />Campaign terverifikasi & jelas tujuannya</li>
-              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#40E0D0]" />Update progres berkala</li>
+              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#40E0D0]" />Update progress berkala</li>
               <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#40E0D0]" />Riwayat donasi & laporan penggunaan</li>
             </ul>
           </div>
@@ -262,7 +262,7 @@ export default function LandingPage() {
             {[
               { step: '01', title: 'Pilih Campaign', desc: 'Lihat kebutuhan sekolah & target donasi.' },
               { step: '02', title: 'Donasi Aman', desc: 'Lakukan donasi, dapatkan bukti transaksi.' },
-              { step: '03', title: 'Pantau Progres', desc: 'Update dan laporan transparan dapat diakses.' },
+              { step: '03', title: 'Pantau Progress', desc: 'Update dan laporan transparan dapat diakses.' },
             ].map((s) => (
               <div
                 key={s.step}
@@ -284,7 +284,7 @@ export default function LandingPage() {
 
           <div className="mt-6 space-y-3">
             {[
-              { q: 'Apakah donasi saya bisa dilacak?', a: 'Bisa. Kamu dapat melihat progres campaign dan laporan penggunaan dana.' },
+              { q: 'Apakah donasi saya bisa dilacak?', a: 'Bisa. Kamu dapat melihat progress campaign dan laporan penggunaan dana.' },
               { q: 'Apakah campaign sudah diverifikasi?', a: 'Campaign dipublikasikan setelah melewati proses verifikasi kebutuhan sekolah.' },
               { q: 'Bagaimana cara sekolah mengajukan bantuan?', a: 'Sekolah bisa daftar dan mengisi pengajuan kebutuhan melalui menu pengajuan.' },
             ].map((f) => (
