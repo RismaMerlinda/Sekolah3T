@@ -139,7 +139,7 @@ export default function LaporanPage() {
             <MenuLink href="/ringkasan" icon={<BarChart2 size={18} />} label="Ringkasan" />
             <MenuLink href="/laporan" icon={<FileText size={18} />} label="Laporan" active />
             <MenuLink href="/timeline" icon={<Clock size={18} />} label="Timeline" />
-            <MenuLink href="/progres" icon={<TrendingUp size={18} />} label="Progres" />
+            <MenuLink href="/progress" icon={<TrendingUp size={18} />} label="Progress" />
             <MenuLink href="/profil" icon={<User size={18} />} label="Profil" />
           </nav>
         </div>

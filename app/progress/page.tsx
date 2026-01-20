@@ -57,7 +57,7 @@ function TopNavbar({ user }: any) {
 }
 
 /* ================= PAGE ================= */
-export default function ProgresPage() {
+export default function ProgressPage() {
   const pathname = usePathname();
 
   const [user, setUser] = useState<any>(null);
@@ -130,7 +130,7 @@ export default function ProgresPage() {
             <MenuLink href="/ringkasan" icon={<BarChart2 size={18} />} label="Ringkasan" active={pathname === '/ringkasan'} />
             <MenuLink href="/laporan" icon={<FileText size={18} />} label="Laporan" active={pathname === '/laporan'} />
             <MenuLink href="/timeline" icon={<Clock size={18} />} label="Timeline" active={pathname === '/timeline'} />
-            <MenuLink href="/progres" icon={<TrendingUp size={18} />} label="Progres" active />
+            <MenuLink href="/progress" icon={<TrendingUp size={18} />} label="Progress" active />
             <MenuLink href="/profil" icon={<User size={18} />} label="Profil" active={pathname === '/profil'} />
           </nav>
         </div>
@@ -154,17 +154,17 @@ export default function ProgresPage() {
         <main className="p-10">
           <div className="max-w-5xl mx-auto space-y-8">
             <h1 className="text-3xl font-bold">
-              Galeri Kondisi & Progres
+              Galeri Kondisi & Progress
             </h1>
 
             {/* ===== EMPTY STATE (USER BARU) ===== */}
             <div className="bg-white p-12 rounded-2xl shadow text-center">
               <ImageOff size={56} className="mx-auto text-gray-400" />
               <h2 className="mt-4 text-lg font-semibold">
-                Belum Ada Progres
+                Belum Ada Progress
               </h2>
               <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
-                Anda belum menambahkan dokumentasi kondisi awal maupun progres kegiatan.
+                Anda belum menambahkan dokumentasi kondisi awal maupun progress kegiatan.
                 Setelah pengajuan disetujui, perkembangan akan ditampilkan di halaman ini.
               </p>
             </div>

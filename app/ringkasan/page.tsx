@@ -139,7 +139,7 @@ export default function RingkasanPage() {
             <MenuLink href="/ringkasan" icon={<BarChart2 size={18} />} label="Ringkasan" active={pathname === '/ringkasan'} />
             <MenuLink href="/laporan" icon={<FileText size={18} />} label="Laporan" active={pathname === '/laporan'} />
             <MenuLink href="/timeline" icon={<Clock size={18} />} label="Timeline" active={pathname === '/timeline'} />
-            <MenuLink href="/progres" icon={<TrendingUp size={18} />} label="Progres" active={pathname === '/progres'} />
+            <MenuLink href="/progress" icon={<TrendingUp size={18} />} label="Progress" active={pathname === '/progress'} />
             <MenuLink href="/profil" icon={<User size={18} />} label="Profil" active={pathname === '/profil'} />
           </nav>
         </div>
@@ -177,7 +177,7 @@ export default function RingkasanPage() {
               <StatusCard status={summary.status} />
             </div>
 
-            <Card title="Grafik Progres Dana">
+            <Card title="Grafik Progress Dana">
               <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
                 Grafik akan muncul setelah terdapat transaksi dana
               </div>
