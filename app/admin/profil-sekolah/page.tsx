@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 /* ================= TYPES ================= */
 
@@ -32,11 +32,13 @@ type VerifyStatus = "menunggu" | "terverifikasi" | "ditolak";
 
 export default function AdminVerifikasiSekolahDetailPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const sp = useSearchParams();
 
   // route contoh: /admin/profil-sekolah/detail?npsn=222140
   const npsnFromUrl = (sp.get("npsn") || "").trim();
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // data pengajuan (kosong dulu, nanti backend)
@@ -63,6 +65,16 @@ export default function AdminVerifikasiSekolahDetailPage() {
     if (!ok) window.location.href = "/admin";
   }, []);
 
+  // ✅ lock scroll saat drawer kebuka
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [sidebarOpen]);
+
   // ✅ load data pengajuan (sementara kosong, nanti backend)
   useEffect(() => {
     if (!npsnFromUrl) return;
@@ -79,6 +91,11 @@ export default function AdminVerifikasiSekolahDetailPage() {
   }, [npsnFromUrl]);
 
   /* ================= HANDLERS ================= */
+
+  function logout() {
+    localStorage.removeItem("admin_auth");
+    window.location.href = "/admin";
+  }
 
   async function checkNpsn() {
     if (!npsnFromUrl) return;
@@ -129,27 +146,81 @@ export default function AdminVerifikasiSekolahDetailPage() {
 
   const statusPillClass = useMemo(() => {
     if (status === "menunggu")
-      return "bg-[#F59E0B]/10 text-[#B45309] border-[#F59E0B]/25"; // Orange
+      return "bg-[#FEF9C3] text-[#6B4E00] border-[#FDE68A]";
     if (status === "terverifikasi")
-      return "bg-[#22C55E]/10 text-[#15803D] border-[#22C55E]/25"; // Green
-    return "bg-[#EF4444]/10 text-[#B91C1C] border-[#EF4444]/25"; // Red
+      return "bg-[#BBF7D0] text-[#0F2F2E] border-[#22C55E]/25";
+    return "bg-[#FECACA] text-[#0F2F2E] border-[#EF4444]/25";
   }, [status]);
+
+  const SidebarContent = (
+    <div className="h-full flex flex-col">
+      <div className="px-6 py-6">
+        <div className="text-lg font-extrabold text-[#0F2F2E]">Admin</div>
+        <div className="text-xs text-[#6B8E8B] mt-1">SAHABAT3T Portal</div>
+      </div>
+
+      <nav className="px-4 flex-1 space-y-2">
+        <SidebarItem
+          label="Dashboard"
+          href="/admin/dashboard"
+          active={pathname === "/admin/dashboard"}
+          onClick={() => setSidebarOpen(false)}
+        />
+        <SidebarItem
+          label="Verifikasi"
+          href="/admin/verifikasi"
+          active={pathname === "/admin/verifikasi"}
+          onClick={() => setSidebarOpen(false)}
+        />
+        <SidebarItem
+          label="Laporan"
+          href="/admin/laporan"
+          active={pathname === "/admin/laporan"}
+          onClick={() => setSidebarOpen(false)}
+        />
+        <SidebarItem
+          label="Profil Sekolah"
+          href="/admin/profil-sekolah"
+          active={pathname === "/admin/profil-sekolah"}
+          onClick={() => setSidebarOpen(false)}
+        />
+      </nav>
+
+      <div className="px-4 pb-6">
+        <button
+          onClick={() => {
+            setSidebarOpen(false);
+            logout();
+          }}
+          className="w-full rounded-xl px-4 py-3 text-sm font-semibold
+                     border border-[#B2F5EA] bg-white/80 hover:shadow-md transition"
+          type="button"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  );
 
   /* ================= GUARDS ================= */
 
   if (!npsnFromUrl) {
     return (
-      <div className="min-h-screen p-6 animate-fade-in">
-        <div className="max-w-xl mx-auto rounded-[2rem] bg-white/80 backdrop-blur-xl border border-[#B2F5EA] p-8 text-center shadow-xl shadow-[#40E0D0]/5">
-          <div className="text-xl font-extrabold text-[#0F2F2E] mb-2">
+      <div className="min-h-screen bg-[#E6FFFA] p-6">
+        <div className="rounded-2xl bg-white/80 border border-[#B2F5EA] p-6">
+          <div className="text-lg font-extrabold text-[#0F2F2E]">
             NPSN belum dipilih
           </div>
-          <p className="text-sm text-[#6B8E8B] mb-6">
-            Silakan kembali ke halaman Verifikasi dan pilih sekolah yang ingin di cek.
+          <p className="mt-2 text-sm text-[#4A6F6C]">
+            Buka halaman ini dari menu Verifikasi dengan query:
+            <br />
+            <code className="inline-block mt-2 px-2 py-1 rounded-lg bg-white border border-[#B2F5EA] text-[#0F2F2E] font-semibold">
+              /admin/profil-sekolah/detail?npsn=222140
+            </code>
           </p>
           <button
             onClick={() => router.push("/admin/verifikasi")}
-            className="rounded-xl px-6 py-3 text-sm font-bold bg-[#0F2F2E] text-white hover:bg-[#1A4D4A] transition shadow-lg shadow-[#0F2F2E]/20"
+            className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold bg-[#0F2F2E] text-white"
             type="button"
           >
             Kembali ke Verifikasi
@@ -162,220 +233,265 @@ export default function AdminVerifikasiSekolahDetailPage() {
   /* ================= UI ================= */
 
   return (
-    <div className="flex flex-col min-h-screen animate-fade-in">
-      {/* TOPBAR */}
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-[#B2F5EA]">
-        <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex items-center justify-between gap-3">
-          <div>
-            <div className="text-xs font-bold text-[#6B8E8B] uppercase tracking-wider">Verifikasi</div>
-            <h1 className="text-2xl font-extrabold text-[#0F2F2E] tracking-tight">
-              Detail Verifikasi Sekolah
-            </h1>
-          </div>
+    <div className="min-h-screen bg-[#E6FFFA]">
+      {/* background glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-[#40E0D0]/20 blur-3xl" />
+        <div className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-[#2CB1A6]/20 blur-3xl" />
+      </div>
 
-          <button
-            onClick={() => router.push("/admin/verifikasi")}
-            className="rounded-xl px-4 py-2.5 text-sm font-bold
-                        border border-[#B2F5EA] bg-white text-[#0F2F2E] hover:bg-[#E6FFFA] transition"
-            type="button"
-          >
-            Kembali
-          </button>
-        </div>
-      </header>
+      {/* MOBILE DRAWER */}
+      <div
+        className={`fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] transition-opacity lg:hidden ${
+          sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={() => setSidebarOpen(false)}
+      />
+      <aside
+        className={`fixed left-0 top-0 z-50 h-full w-[280px] bg-white/90 border-r border-[#B2F5EA]
+                    shadow-xl transition-transform lg:hidden
+                    ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        {SidebarContent}
+      </aside>
 
-      {/* CONTENT */}
-      <main className="p-4 sm:p-6 lg:p-8 flex-1 space-y-6 max-w-[1600px] mx-auto w-full">
-        {/* Header card */}
-        <div className="rounded-[2.5rem] bg-white/60 backdrop-blur-xl border border-[#B2F5EA] shadow-xl shadow-[#40E0D0]/5 p-8">
-          <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-bold text-[#6B8E8B] mb-1">
-                NPSN
-              </div>
-              <div className="text-3xl font-black text-[#0F2F2E] tracking-tight">
-                {npsnFromUrl}
-              </div>
-              <div className="mt-2 text-lg font-medium text-[#4A6F6C]">
-                {submission?.namaSekolah ? submission.namaSekolah : "(Nama sekolah akan muncul)"}
-              </div>
-            </div>
+      {/* DESKTOP LAYOUT */}
+      <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
+        <aside className="hidden lg:block bg-white/70 lg:border-r border-[#B2F5EA]">
+          {SidebarContent}
+        </aside>
 
-            <div className="flex flex-col sm:items-end gap-3">
-              <div
-                className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-sm font-bold border ${statusPillClass}`}
-              >
-                <span className={`w-2 h-2 rounded-full mr-2 ${status === 'menunggu' ? 'bg-[#F59E0B]' : status === 'terverifikasi' ? 'bg-[#22C55E]' : 'bg-[#EF4444]'}`} />
-                {statusLabel}
+        {/* MAIN */}
+        <div className="flex flex-col min-h-screen">
+          {/* TOPBAR (tanpa search box kayak yang kamu minta dihapus) */}
+          <header className="sticky top-0 z-20 bg-white/70 backdrop-blur border-b border-[#B2F5EA]">
+            <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="lg:hidden mt-0.5 rounded-xl p-2
+                             border border-[#B2F5EA] bg-white/80
+                             hover:shadow-md transition"
+                  aria-label="Buka menu"
+                >
+                  <MenuIcon />
+                </button>
+
+                <div>
+                  <div className="text-xs font-semibold text-[#6B8E8B]">
+                    Verifikasi
+                  </div>
+                  <h1 className="text-lg sm:text-xl font-extrabold text-[#0F2F2E]">
+                    Detail Verifikasi Sekolah
+                  </h1>
+                </div>
               </div>
 
               <button
+                onClick={() => router.push("/admin/verifikasi")}
+                className="rounded-xl px-4 py-2 text-sm font-semibold
+                           border border-[#B2F5EA] bg-white/80 hover:shadow-md transition"
                 type="button"
-                onClick={checkNpsn}
-                className="rounded-xl px-5 py-2.5 text-sm font-bold
-                              bg-[#0F2F2E] text-white hover:bg-[#1A4D4A] transition shadow-lg shadow-[#0F2F2E]/20"
               >
-                Cek Validitas NPSN
+                Kembali
               </button>
             </div>
-          </div>
+          </header>
 
-          {npsnCheck.state !== "idle" && (
-            <div className="mt-6">
-              <div
-                className={
-                  "rounded-xl border px-4 py-3 text-sm font-medium inline-block " +
-                  (npsnCheck.state === "found"
-                    ? "bg-[#DCFCE7] border-[#22C55E]/30 text-[#166534]"
-                    : npsnCheck.state === "not_found"
-                      ? "bg-[#FEE2E2] border-[#EF4444]/30 text-[#991B1B]"
-                      : "bg-white border-[#B2F5EA] text-[#4A6F6C]")
-                }
-              >
-                {npsnCheck.state === "checking"
-                  ? "Sedang mengecek NPSN..."
-                  : npsnCheck.message}
+          {/* CONTENT */}
+          <main className="p-4 sm:p-6 lg:p-8 flex-1 space-y-4">
+            {/* Header card */}
+            <div className="rounded-3xl bg-white/75 border border-[#B2F5EA] shadow-xl shadow-[#40E0D0]/10 overflow-hidden">
+              <div className="px-6 py-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-[#6B8E8B]">
+                      NPSN
+                    </div>
+                    <div className="text-2xl font-extrabold text-[#0F2F2E]">
+                      {npsnFromUrl}
+                    </div>
+                    <div className="mt-1 text-sm text-[#4A6F6C]">
+                      {submission?.namaSekolah ? submission.namaSekolah : "(Nama sekolah akan muncul dari backend)"}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-extrabold border ${statusPillClass}`}
+                    >
+                      {statusLabel}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={checkNpsn}
+                      className="rounded-xl px-4 py-2 text-sm font-semibold
+                                 bg-[#0F2F2E] text-white hover:opacity-95 transition"
+                    >
+                      Cek NPSN
+                    </button>
+                  </div>
+                </div>
+
+                {npsnCheck.state !== "idle" && (
+                  <div className="mt-4">
+                    <div
+                      className={
+                        "rounded-2xl border px-4 py-3 text-sm " +
+                        (npsnCheck.state === "found"
+                          ? "bg-[#BBF7D0]/60 border-[#22C55E]/25 text-[#0F2F2E]"
+                          : npsnCheck.state === "not_found"
+                          ? "bg-[#FECACA]/70 border-[#EF4444]/25 text-[#0F2F2E]"
+                          : npsnCheck.state === "checking"
+                          ? "bg-white border-[#B2F5EA] text-[#4A6F6C]"
+                          : "bg-white border-[#B2F5EA] text-[#4A6F6C]")
+                      }
+                    >
+                      {npsnCheck.state === "checking"
+                        ? "Sedang mengecek NPSN..."
+                        : npsnCheck.message}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
 
-        {/* GRID */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
-          {/* KIRI: Data Sekolah */}
-          <div className="space-y-6">
-            <SectionCard title="Data Sekolah">
-              <div className="grid gap-6 sm:grid-cols-2 text-sm">
-                <Info label="Nama Sekolah" value={submission?.namaSekolah} />
-                <Info label="Jenjang" value={submission?.jenjang} />
-                <Info label="Status Sekolah" value={submission?.statusSekolah} />
-                <Info label="Alamat" value={submission?.alamat} wide />
-                <Info label="Provinsi" value={submission?.provinsi} />
-                <Info label="Kabupaten/Kota" value={submission?.kabupaten} />
-                <Info label="Kecamatan" value={submission?.kecamatan} />
-              </div>
-
-              {!submission && (
-                <EmptyNote text="Belum ada data sekolah ditampilkan. Nanti setelah backend jalan, isi dari API akan muncul di sini." />
-              )}
-            </SectionCard>
-
-            <SectionCard title="Kontak & Penanggung Jawab">
-              <div className="grid gap-6 sm:grid-cols-2 text-sm">
-                <Info label="Kepala Sekolah" value={submission?.kepalaSekolah} />
-                <Info label="Email" value={submission?.email} />
-                <Info label="Telepon" value={submission?.telp} />
-                <Info label="Dokumen Pendukung" value={submission?.dokumenUrl ? "Tersedia" : undefined} />
-              </div>
-
-              {submission?.dokumenUrl ? (
-                <div className="mt-6">
-                  <a
-                    href={submission.dokumenUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold
-                                border border-[#B2F5EA] bg-white text-[#0F2F2E] hover:bg-[#E6FFFA] transition"
-                  >
-                    <DocIcon />
-                    Lihat Dokumen
-                  </a>
-                </div>
-              ) : (
-                <EmptyNote text="Dokumen pendukung belum ada." />
-              )}
-            </SectionCard>
-          </div>
-
-          {/* KANAN: Panel Verifikasi */}
-          <div className="space-y-6">
-            <div className="rounded-[2.5rem] bg-white/60 backdrop-blur-xl border border-[#B2F5EA] shadow-xl shadow-[#40E0D0]/5 overflow-hidden p-6 sticky top-24">
-              <div className="mb-4">
-                <h3 className="text-lg font-extrabold text-[#0F2F2E]">Keputusan</h3>
-                <p className="text-xs text-[#6B8E8B]">Tentukan status verifikasi sekolah ini.</p>
-              </div>
-
-              <div className="bg-white/50 rounded-2xl p-4 border border-[#B2F5EA]/50 space-y-3">
-                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${status === 'terverifikasi' ? 'bg-[#DCFCE7] border-[#22C55E] ring-1 ring-[#22C55E]' : 'bg-white border-[#E5E7EB] hover:border-[#B2F5EA]'}`}>
-                  <input
-                    type="radio"
-                    name="verify"
-                    className="accent-[#16A34A] w-4 h-4"
-                    checked={status === "terverifikasi"}
-                    onChange={() => setStatus("terverifikasi")}
-                  />
-                  <div className="flex-1">
-                    <span className="block text-sm font-bold text-[#0F2F2E]">Terverifikasi</span>
-                    <span className="block text-xs text-[#6B8E8B]">Data valid & lengkap</span>
+            {/* GRID */}
+            <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+              {/* KIRI: Data Sekolah */}
+              <div className="space-y-4">
+                <SectionCard title="Data Sekolah">
+                  <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                    <Info label="Nama Sekolah" value={submission?.namaSekolah} />
+                    <Info label="Jenjang" value={submission?.jenjang} />
+                    <Info label="Status Sekolah" value={submission?.statusSekolah} />
+                    <Info label="Alamat" value={submission?.alamat} wide />
+                    <Info label="Provinsi" value={submission?.provinsi} />
+                    <Info label="Kabupaten/Kota" value={submission?.kabupaten} />
+                    <Info label="Kecamatan" value={submission?.kecamatan} />
                   </div>
-                </label>
 
-                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${status === 'ditolak' ? 'bg-[#FEE2E2] border-[#EF4444] ring-1 ring-[#EF4444]' : 'bg-white border-[#E5E7EB] hover:border-[#B2F5EA]'}`}>
-                  <input
-                    type="radio"
-                    name="verify"
-                    className="accent-[#DC2626] w-4 h-4"
-                    checked={status === "ditolak"}
-                    onChange={() => setStatus("ditolak")}
-                  />
-                  <div className="flex-1">
-                    <span className="block text-sm font-bold text-[#0F2F2E]">Ditolak</span>
-                    <span className="block text-xs text-[#6B8E8B]">Data tidak sesuai</span>
-                  </div>
-                </label>
+                  {!submission && (
+                    <EmptyNote text="Belum ada data sekolah ditampilkan. Nanti setelah backend jalan, isi dari API akan muncul di sini." />
+                  )}
+                </SectionCard>
 
-                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${status === 'menunggu' ? 'bg-[#FEF3C7] border-[#F59E0B] ring-1 ring-[#F59E0B]' : 'bg-white border-[#E5E7EB] hover:border-[#B2F5EA]'}`}>
-                  <input
-                    type="radio"
-                    name="verify"
-                    className="accent-[#D97706] w-4 h-4"
-                    checked={status === "menunggu"}
-                    onChange={() => setStatus("menunggu")}
-                  />
-                  <div className="flex-1">
-                    <span className="block text-sm font-bold text-[#0F2F2E]">Menunggu</span>
-                    <span className="block text-xs text-[#6B8E8B]">Belum diputuskan</span>
+                <SectionCard title="Kontak & Penanggung Jawab">
+                  <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                    <Info label="Kepala Sekolah" value={submission?.kepalaSekolah} />
+                    <Info label="Email" value={submission?.email} />
+                    <Info label="Telepon" value={submission?.telp} />
+                    <Info label="Dokumen Pendukung" value={submission?.dokumenUrl ? "Tersedia" : undefined} />
                   </div>
-                </label>
+
+                  {submission?.dokumenUrl ? (
+                    <div className="mt-3">
+                      <a
+                        href={submission.dokumenUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
+                                   border border-[#B2F5EA] bg-white/80 hover:shadow-md transition text-[#0F2F2E]"
+                      >
+                        <DocIcon />
+                        Lihat Dokumen
+                      </a>
+                    </div>
+                  ) : (
+                    <EmptyNote text="Dokumen pendukung belum ada (nanti ambil dari backend)." />
+                  )}
+                </SectionCard>
               </div>
 
-              <div className="mt-6">
-                <div className="text-sm font-bold text-[#0F2F2E] mb-2">
-                  Catatan Admin
-                </div>
-                <textarea
-                  value={catatan}
-                  onChange={(e) => setCatatan(e.target.value)}
-                  placeholder="Tulis alasan atau catatan tambahan..."
-                  className="w-full min-h-[120px] rounded-2xl border border-[#B2F5EA]
-                              bg-white/80 p-4 text-sm outline-none focus:ring-2 focus:ring-[#40E0D0] transition"
-                />
-              </div>
+              {/* KANAN: Panel Verifikasi */}
+              <div className="space-y-4">
+                <SectionCard title="Keputusan Verifikasi">
+                  <div className="space-y-2 text-sm text-[#4A6F6C]">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="verify"
+                        checked={status === "terverifikasi"}
+                        onChange={() => setStatus("terverifikasi")}
+                      />
+                      Terverifikasi (NPSN valid & data sesuai)
+                    </label>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="verify"
+                        checked={status === "ditolak"}
+                        onChange={() => setStatus("ditolak")}
+                      />
+                      Ditolak (data tidak sesuai / NPSN tidak valid)
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="verify"
+                        checked={status === "menunggu"}
+                        onChange={() => setStatus("menunggu")}
+                      />
+                      Menunggu
+                    </label>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl bg-white/80 border border-[#B2F5EA] p-4">
+                    <div className="text-sm font-extrabold text-[#0F2F2E]">
+                      Catatan Admin
+                    </div>
+                    <textarea
+                      value={catatan}
+                      onChange={(e) => setCatatan(e.target.value)}
+                      placeholder="Tulis catatan (opsional)..."
+                      className="mt-2 w-full min-h-[120px] rounded-xl border border-[#B2F5EA]
+                                 bg-white p-3 text-sm outline-none text-[#0F2F2E]"
+                    />
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => saveVerification("ditolak")}
+                      className="rounded-full px-4 py-2 text-sm font-extrabold
+                                 bg-[#6B7280] text-white hover:opacity-95 disabled:opacity-60"
+                    >
+                      Tolak
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => saveVerification("terverifikasi")}
+                      className="rounded-full px-4 py-2 text-sm font-extrabold
+                                 bg-[#0F2F2E] text-white hover:opacity-95 disabled:opacity-60"
+                    >
+                      Verifikasi
+                    </button>
+                  </div>
+
+                  <p className="mt-3 text-xs text-[#6B8E8B]">
+                    *Saat ini tombol simpan masih placeholder (tanpa backend). Nanti tinggal sambungkan ke API.
+                  </p>
+                </SectionCard>
+
                 <button
                   type="button"
-                  disabled={loading}
-                  onClick={() => saveVerification(status)}
-                  className="col-span-2 rounded-xl py-3 text-sm font-bold
-                              bg-[#0F2F2E] text-white hover:bg-[#1A4D4A] shadow-lg shadow-[#0F2F2E]/20 transition disabled:opacity-70"
+                  onClick={() => router.push("/admin/verifikasi")}
+                  className="w-full rounded-2xl px-4 py-3 text-sm font-extrabold
+                             border border-[#B2F5EA] bg-white/80 hover:shadow-md transition"
                 >
-                  {loading ? "Menyimpan..." : "Simpan Keputusan"}
+                  Kembali ke List Verifikasi
                 </button>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => router.push("/admin/verifikasi")}
-              className="w-full rounded-2xl px-4 py-4 text-sm font-bold text-[#6B8E8B]
-                          hover:bg-[#E6FFFA] hover:text-[#0F2F2E] transition border border-dashed border-[#B2F5EA]"
-            >
-              Kembali ke List
-            </button>
-          </div>
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -390,11 +506,11 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[2.5rem] bg-white/60 backdrop-blur-xl border border-[#B2F5EA] shadow-xl shadow-[#40E0D0]/5 overflow-hidden">
-      <div className="px-8 py-6 border-b border-[#B2F5EA]/50 bg-white/40">
-        <div className="text-lg font-extrabold text-[#0F2F2E]">{title}</div>
+    <div className="rounded-3xl bg-white/75 border border-[#B2F5EA] shadow-xl shadow-[#40E0D0]/10 overflow-hidden">
+      <div className="px-6 py-4 border-b border-[#B2F5EA] bg-white/70">
+        <div className="text-base font-extrabold text-[#0F2F2E]">{title}</div>
       </div>
-      <div className="p-8">{children}</div>
+      <div className="p-6">{children}</div>
     </div>
   );
 }
@@ -411,11 +527,11 @@ function Info({
   const isEmpty = value === undefined || value === null || value === "";
   return (
     <div className={wide ? "sm:col-span-2" : ""}>
-      <div className="text-xs font-bold text-[#6B8E8B] uppercase tracking-wider mb-2">{label}</div>
-      <div className={"rounded-xl border px-4 py-3 text-sm font-medium transition " + (isEmpty
-        ? "border-dashed border-[#B2F5EA] bg-transparent text-[#9CA3AF]"
-        : "border-[#B2F5EA] bg-white text-[#0F2F2E]")}>
-        {isEmpty ? "Belum diisi" : String(value)}
+      <div className="text-xs font-semibold text-[#6B8E8B]">{label}</div>
+      <div className={"mt-1 rounded-xl border px-3 py-2 text-sm " + (isEmpty
+        ? "border-[#B2F5EA] bg-white/60 text-[#9CA3AF]"
+        : "border-[#B2F5EA] bg-white text-[#0F2F2E] font-semibold")}>
+        {isEmpty ? "-" : String(value)}
       </div>
     </div>
   );
@@ -423,16 +539,70 @@ function Info({
 
 function EmptyNote({ text }: { text: string }) {
   return (
-    <div className="mt-2 rounded-2xl border border-dashed border-[#B2F5EA] bg-[#E6FFFA]/30 p-4 text-sm text-[#4A6F6C] font-medium text-center">
+    <div className="mt-4 rounded-2xl border border-[#B2F5EA] bg-white/60 p-4 text-sm text-[#4A6F6C]">
       {text}
     </div>
   );
 }
 
+/* ================= SIDEBAR ITEM ================= */
+
+function SidebarItem({
+  label,
+  href,
+  active,
+  onClick,
+}: {
+  label: string;
+  href: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <button
+      onClick={() => {
+        onClick?.();
+        router.push(href);
+      }}
+      className={
+        "w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition " +
+        (active
+          ? "bg-[#0F2F2E] text-white shadow-md"
+          : "text-[#0F2F2E] hover:bg-black/5")
+      }
+      type="button"
+    >
+      {label}
+    </button>
+  );
+}
+
 /* ================= ICONS ================= */
+
+function MenuIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 7h16M4 12h16M4 17h16"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 function DocIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M7 3h7l3 3v15a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path d="M14 3v4h4" stroke="currentColor" strokeWidth="2" />
+    </svg>
   );
 }

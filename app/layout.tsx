@@ -1,3 +1,4 @@
+import ToastProvider from "@/components/providers/ToastProvider";
 import "./globals.css";
 
 export const metadata = {
@@ -12,7 +13,10 @@ export default function RootLayout({
 }) {
     return (
         <html lang="id">
-            <body>{children}</body>
+            <body>
+                <ToastProvider />
+                {children}
+            </body>
         </html>
     );
 }

@@ -8,7 +8,7 @@ import api from "@/lib/axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitErrorHandler } from "react-hook-form";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -46,26 +46,43 @@ export default function RegisterPage() {
         try {
             console.log("DATA DIKIRIM:", data); // 🔥 DEBUG
 
+            // Map schoolName to full_name for backend compatibility
             await api.post("/auth/register", {
-                schoolName: data.schoolName,
-                npsn: data.npsn,
+                full_name: data.schoolName,
+                npsn: data.npsn, // Note: Backend might need update to save this
                 email: data.email,
                 password: data.password,
             });
 
             toast.success("Registrasi berhasil!");
-            router.replace("/login");
+            setIsSuccess(true);
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Terjadi kesalahan");
+            const errorMessage = error.response?.data?.message || "Terjadi kesalahan";
+            toast.error(errorMessage);
+
+            // If user already exists, additional visual cue if needed
+            if (errorMessage.toLowerCase().includes("terdaftar")) {
+                // Already handled by toast.error
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
+    const onError: SubmitErrorHandler<RegisterForm> = (errors) => {
+        // Show popup if form is incomplete
+        toast.error("Mohon lengkapi semua data yang wajib diisi!");
+
+        // Optional: List specific missing fields in console or toast if needed
+        console.log("Form Errors:", errors);
+    };
 
     useEffect(() => {
         if (isSuccess) {
-            router.replace("/login");
+            const timer = setTimeout(() => {
+                router.replace("/login");
+            }, 1500);
+            return () => clearTimeout(timer);
         }
     }, [isSuccess, router]);
 
@@ -73,8 +90,12 @@ export default function RegisterPage() {
     // ================= SUCCESS PAGE =================
     if (isSuccess) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <p>Registrasi berhasil, mengalihkan ke login…</p>
+            <div className="min-h-screen flex items-center justify-center bg-secondary-bg">
+                <Card className="p-8 text-center shadow-xl">
+                    <h2 className="text-2xl font-bold text-green-600 mb-4">✅ Registrasi Berhasil!</h2>
+                    <p>Akun sekolah Anda telah dibuat.</p>
+                    <p className="text-sm text-gray-500 mt-2">Mengalihkan ke halaman login...</p>
+                </Card>
             </div>
         );
     }
@@ -93,7 +114,7 @@ export default function RegisterPage() {
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-4">
                     <Input
                         label="Nama Sekolah"
                         {...register("schoolName")}
