@@ -106,19 +106,12 @@ export default function TransparansiPage() {
                         <p className="text-neutral-body max-w-2xl mx-auto">Kami menerapkan kebijakan 100% Penyaluran untuk donasi program sekolah (biaya operasional platform ditanggung oleh mitra korporat dan donasi sukarela "tips" terpisah).</p>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-8 justify-center items-stretch max-w-5xl mx-auto">
-                        <Card className="flex-1 border-2 border-green-100 bg-green-50/50 p-8">
-                            <div className="text-2xl font-bold text-green-700 mb-2">95% Program</div>
-                            <p className="text-sm text-gray-600">Dana langsung digunakan untuk pembelian barang, renovasi, dan kebutuhan siswa sesuai RAB yang diajukan sekolah.</p>
+                    <div className="flex justify-center max-w-3xl mx-auto">
+                        <Card className="w-full border-2 border-green-100 bg-green-50/50 p-8 text-center">
+                            <div className="text-2xl font-bold text-green-700 mb-2">100% Program</div>
+                            <p className="text-sm text-gray-600">Seluruh dana donasi digunakan sepenuhnya untuk pembelian barang, renovasi, dan kebutuhan siswa sesuai RAB yang diajukan sekolah.</p>
                             <div className="w-full bg-gray-200 h-4 rounded-full mt-4 overflow-hidden">
-                                <div className="bg-green-500 h-full w-[95%]"></div>
-                            </div>
-                        </Card>
-                        <Card className="flex-1 border-2 border-blue-100 bg-blue-50/50 p-8">
-                            <div className="text-2xl font-bold text-blue-700 mb-2">5% Operasional</div>
-                            <p className="text-sm text-gray-600">Biaya transaksi payment gateway, verifikasi lapangan, dan audit laporan keuangan.</p>
-                            <div className="w-full bg-gray-200 h-4 rounded-full mt-4 overflow-hidden">
-                                <div className="bg-blue-500 h-full w-[5%]"></div>
+                                <div className="bg-green-500 h-full w-full"></div>
                             </div>
                         </Card>
                     </div>
