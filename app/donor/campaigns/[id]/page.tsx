@@ -258,6 +258,8 @@ const mockCampaignDetails: { [key: string]: Campaign } = {
   },
 };
 
+import { getDonorCampaignDetail } from '@/lib/donor-api';
+
 export default function CampaignDetailPage() {
   const params = useParams();
   const campaignId = params?.id as string;
@@ -266,12 +268,23 @@ export default function CampaignDetailPage() {
   const [donationSubmitted, setDonationSubmitted] = useState(false);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockCampaign = mockCampaignDetails[campaignId] || mockCampaignDetails['1'];
-      setCampaign(mockCampaign);
-      setIsLoading(false);
-    }, 500);
+    const fetchCampaign = async () => {
+      if (!campaignId) return;
+      try {
+        const data = await getDonorCampaignDetail(campaignId);
+        if (data) {
+          setCampaign({
+            ...data,
+            id: data._id || data.id
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching campaign detail:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCampaign();
   }, [campaignId]);
 
   const handleDonationSubmit = (amount: number) => {

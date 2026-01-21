@@ -11,17 +11,22 @@ interface DonationFormProps {
 
 type PaymentMethod = 'qris' | 'bank' | 'gopay' | 'ovo' | 'dana' | null;
 
+import { submitDonationSimulation } from '@/lib/donor-api';
+
 export const DonationForm: React.FC<DonationFormProps> = ({
   campaignId,
   campaignTitle,
   onSubmit,
-  isLoading = false,
+  isLoading: propLoading = false,
 }) => {
   const [amount, setAmount] = useState<string>('');
   const [donorName, setDonorName] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string>('');
+  const [isInternalLoading, setIsInternalLoading] = useState(false);
+
+  const isLoading = propLoading || isInternalLoading;
 
   const predefinedAmounts = [50000, 100000, 250000, 500000, 1000000];
 
@@ -52,7 +57,7 @@ export const DonationForm: React.FC<DonationFormProps> = ({
     setError('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -76,20 +81,27 @@ export const DonationForm: React.FC<DonationFormProps> = ({
       return;
     }
 
-    setSubmitted(true);
+    setIsInternalLoading(true);
 
-    // Auto scroll to top to show success message
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      await submitDonationSimulation(campaignId, donorName, parseInt(amount));
 
-    onSubmit?.(parseInt(amount));
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      onSubmit?.(parseInt(amount));
 
-    // Reset form after 4 seconds
-    setTimeout(() => {
-      setAmount('');
-      setDonorName('');
-      setPaymentMethod(null);
-      setSubmitted(false);
-    }, 4000);
+      // Reset form after 4 seconds
+      setTimeout(() => {
+        setAmount('');
+        setDonorName('');
+        setPaymentMethod(null);
+        setSubmitted(false);
+      }, 4000);
+    } catch (err: any) {
+      setError(err.message || 'Gagal mengirim donasi. Silakan coba lagi.');
+    } finally {
+      setIsInternalLoading(false);
+    }
   };
 
   if (submitted) {

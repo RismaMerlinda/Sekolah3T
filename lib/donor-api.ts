@@ -23,7 +23,7 @@ import axios from '@/lib/axios';
 export const getDonorCampaigns = async () => {
   try {
     const response = await axios.get('/api/donor/campaigns');
-    return response.data;
+    return response.data.data || [];
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     throw error;
@@ -38,7 +38,7 @@ export const getDonorCampaigns = async () => {
 export const getDonorCampaignDetail = async (campaignId: string) => {
   try {
     const response = await axios.get(`/api/donor/campaigns/${campaignId}`);
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error(`Error fetching campaign ${campaignId}:`, error);
     throw error;
@@ -99,8 +99,8 @@ export const getCampaignTransparencyReport = async (campaignId: string) => {
  */
 export const getPlatformTransparencyStats = async () => {
   try {
-    const response = await axios.get('/api/donor/transparency/stats');
-    return response.data;
+    const response = await axios.get('/api/donor/stats');
+    return response.data.data;
   } catch (error) {
     console.error('Error fetching transparency stats:', error);
     throw error;
@@ -114,8 +114,8 @@ export const getPlatformTransparencyStats = async () => {
  */
 export const getVerifiedSchools = async () => {
   try {
-    const response = await axios.get('/api/donor/schools/verified');
-    return response.data;
+    const response = await axios.get('/api/donor/schools');
+    return response.data.data || [];
   } catch (error) {
     console.error('Error fetching verified schools:', error);
     throw error;

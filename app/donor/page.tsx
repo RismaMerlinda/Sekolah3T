@@ -5,8 +5,11 @@ import Link from 'next/link';
 import { CampaignCard } from '@/components/donor/CampaignCard';
 import { TrustSection } from '@/components/donor/TrustSection';
 
+import { getDonorCampaigns, getPlatformTransparencyStats } from '@/lib/donor-api';
+
 interface Campaign {
   id: string;
+  _id?: string; // MongoDB ID
   title: string;
   description: string;
   schoolName: string;
@@ -29,16 +32,35 @@ export default function DonorHomePage() {
   });
 
   useEffect(() => {
-    // Mock data - Replace with API call
-    const mockCampaigns: Campaign[] = [];
+    const fetchData = async () => {
+      try {
+        const [campaignsData, statsData] = await Promise.all([
+          getDonorCampaigns(),
+          getPlatformTransparencyStats()
+        ]);
 
-    setFeaturedCampaigns(mockCampaigns);
-    setStats({
-      totalFundsRaised: 0,
-      totalDonors: 0,
-      activeCampaigns: 0,
-      supportedSchools: 0,
-    });
+        // Fix ID mapping for MongoDB
+        const mappedCampaigns = campaignsData.map((c: any) => ({
+          ...c,
+          id: c._id || c.id
+        }));
+
+        setFeaturedCampaigns(mappedCampaigns.slice(0, 4));
+
+        if (statsData) {
+          setStats({
+            totalFundsRaised: statsData.totalDonationAmount || 0,
+            totalDonors: statsData.totalDonors || 0,
+            activeCampaigns: statsData.activeCampaigns || 0,
+            supportedSchools: statsData.verifiedSchools || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching data from backend:', error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const formatCurrency = (value: number) => {

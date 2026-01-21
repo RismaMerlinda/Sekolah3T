@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CampaignCard } from '@/components/donor/CampaignCard';
+import { getDonorCampaigns } from '@/lib/donor-api';
 
 interface Campaign {
   id: string;
+  _id?: string;
   title: string;
   description: string;
   schoolName: string;
@@ -26,9 +28,26 @@ export default function CampaignsListPage() {
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - Replace with API call
-  const allCampaigns: Campaign[] = [];
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const data = await getDonorCampaigns();
+        const mapped = data.map((c: any) => ({
+          ...c,
+          id: c._id || c.id
+        }));
+        setAllCampaigns(mapped);
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCampaigns();
+  }, []);
 
   // Filter and sort campaigns
   const filteredAndSortedCampaigns = useMemo(() => {
