@@ -1,22 +1,15 @@
-import ToastProvider from "@/components/providers/ToastProvider";
-import "./globals.css";
+import { DonorHeader, DonorFooter } from '@/components/donor/Header';
 
-export const metadata = {
-    title: "SAHABAT3T",
-    description: "Platform Pendidikan Daerah 3T",
-};
-
-export default function RootLayout({
-    children,
+export default function DonorLayout({
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <html lang="id">
-            <body>
-                <ToastProvider />
-                {children}
-            </body>
-        </html>
-    );
+  return (
+    <div className="flex flex-col min-h-screen bg-white">
+      <DonorHeader />
+      <main className="flex-1">{children}</main>
+      <DonorFooter />
+    </div>
+  );
 }
