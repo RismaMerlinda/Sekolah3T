@@ -6,19 +6,11 @@ const jwt = require('jsonwebtoken');
 
 exports.register = async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { full_name, npsn, email, password } = req.body;
-
-    if (!full_name || !npsn || !email || !password) {
-      return res.status(400).json({
-        message: 'Semua field (termasuk NPSN) wajib diisi',
-=======
     const { schoolName, npsn, email, password } = req.body;
 
     if (!schoolName || !npsn || !email || !password) {
       return res.status(400).json({
         message: 'Semua field wajib diisi',
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
       });
     }
 
@@ -29,25 +21,10 @@ exports.register = async (req, res) => {
       });
     }
 
-<<<<<<< HEAD
-    // Cek NPSN duplicate juga
-    const existingNpsn = await User.findOne({ npsn });
-    if (existingNpsn) {
-      return res.status(400).json({
-        message: 'NPSN sudah terdaftar',
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      full_name,
-=======
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       schoolName,
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
       npsn,
       email,
       password: hashedPassword,
@@ -57,12 +34,7 @@ exports.register = async (req, res) => {
       message: 'Register berhasil',
       user: {
         id: user._id,
-<<<<<<< HEAD
-        full_name: user.full_name,
-        schoolName: user.full_name, // Alias for frontend
-=======
         schoolName: user.schoolName,
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
         npsn: user.npsn,
         email: user.email,
       },
@@ -109,12 +81,7 @@ exports.login = async (req, res) => {
       token,
       user: {
         id: user._id,
-<<<<<<< HEAD
-        full_name: user.full_name,
-        schoolName: user.full_name, // Alias for frontend
-=======
         schoolName: user.schoolName,
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
         npsn: user.npsn,
         email: user.email,
       },

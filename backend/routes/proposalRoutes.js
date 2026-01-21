@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 
 // ADMIN ROUTES (Public/Unprotected for now to allow Admin Dashboard access)
 router.get('/admin/all', controller.getAllProposals);
+router.get('/admin/:id', controller.getProposalById);
 router.put('/admin/:id/status', controller.updateStatus);
 
 // Protected Routes (For Schools)

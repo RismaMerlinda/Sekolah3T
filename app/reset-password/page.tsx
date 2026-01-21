@@ -44,12 +44,12 @@ function ResetPasswordContent() {
 
         setIsLoading(true);
         try {
-            await api.post("/api/auth/sekolah/reset-password", {
+            await api.post("/auth/reset-password", {
                 token,
                 newPassword: data.password,
             });
             toast.success("Password berhasil diubah!");
-            router.push("/sekolah/login");
+            router.push("/login");
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Gagal mengubah password");
         } finally {
@@ -61,7 +61,7 @@ function ResetPasswordContent() {
         return (
             <div className="text-center">
                 <p className="text-red-500 mb-4">Token invalid atau hilang.</p>
-                <Link href="/sekolah/login">
+                <Link href="/login">
                     <Button variant="outline">Kembali ke Login</Button>
                 </Link>
             </div>

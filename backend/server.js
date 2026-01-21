@@ -19,6 +19,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 // Main Connection and Server Start
 const MONGODB_URL = process.env.MONGODB_URL || process.env.MONGODB_URI;

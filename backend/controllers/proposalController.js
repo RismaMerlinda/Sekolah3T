@@ -17,7 +17,8 @@ exports.createDraft = async (req, res) => {
             title, category, region, description,
             schoolName, npsn, contactPhone, principalName, schoolAddress, principalAddress,
             background, purpose, benefits,
-            targetAmount, startDate, endDate
+            targetAmount, startDate, endDate,
+            files
         } = req.body;
 
         const newProposal = await Proposal.create({
@@ -26,7 +27,8 @@ exports.createDraft = async (req, res) => {
             title, category, region, description,
             schoolName, npsn, contactPhone, principalName, schoolAddress, principalAddress,
             background, purpose, benefits,
-            targetAmount, startDate, endDate
+            targetAmount, startDate, endDate,
+            files
         });
 
         res.status(201).json(newProposal);
@@ -130,5 +132,17 @@ exports.updateStatus = async (req, res) => {
         res.json(proposal);
     } catch (error) {
         res.status(500).json({ message: 'Gagal update status', error: error.message });
+    }
+};
+
+// ADMIN: Get Single Proposal
+exports.getProposalById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const proposal = await Proposal.findById(id);
+        if (!proposal) return res.status(404).json({ message: 'Proposal tidak ditemukan' });
+        res.json(proposal);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

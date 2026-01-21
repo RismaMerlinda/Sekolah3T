@@ -167,6 +167,14 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
     // Check if Read Only (Not draft)
     const isReadOnly = initialData && initialData.status !== 'draft';
 
+    // Format numeric targetAmount to dotted string on load
+    useEffect(() => {
+        if (initialData?.targetAmount) {
+            const formatted = new Intl.NumberFormat("id-ID").format(initialData.targetAmount);
+            setValue("targetAmount", formatted);
+        }
+    }, [initialData, setValue]);
+
     const onSubmit = async (data: any) => {
         setIsSaving(true);
         try {
@@ -175,9 +183,15 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
             // 1. SAVE / UPDATE (Only if not read-only)
             if (!isReadOnly) {
                 if (proposalId) {
-                    await api.put(`/proposals/${proposalId}`, data);
+                    await api.put(`/proposals/${proposalId}`, {
+                        ...data,
+                        targetAmount: Number(String(data.targetAmount).replace(/\./g, ''))
+                    });
                 } else {
-                    const res = await api.post('/proposals', data);
+                    const res = await api.post('/proposals', {
+                        ...data,
+                        targetAmount: Number(String(data.targetAmount).replace(/\./g, ''))
+                    });
                     proposalId = res.data._id;
                 }
             }
@@ -259,7 +273,16 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
 
                 <Section title="4. Rencana Dana & Waktu">
                     <TwoCol>
-                        <AutoField label="Target Dana (Rp)" name="targetAmount" register={register} placeholder="Contoh: 15000000" type="number" />
+                        <div>
+                            <CurrencyField
+                                label="Target Dana (Rp)"
+                                name="targetAmount"
+                                register={register}
+                                setValue={setValue}
+                                watch={watch}
+                                placeholder="Contoh: 20.000.000"
+                            />
+                        </div>
                         <DateField label="Tanggal Mulai" name="startDate" register={register} />
                         <UploadBox label="Rincian Penggunaan Dana" name="files.budgetPlan" setValue={isReadOnly ? null : setValue} watch={watch} />
                         <DateField label="Tanggal Selesai" name="endDate" register={register} />
@@ -397,6 +420,11 @@ export default function PengajuanPage() {
 
 /* === HELPERS === */
 
+function formatRupiah(n: number) {
+    if (!n) return "Rp 0";
+    return "Rp " + new Intl.NumberFormat("id-ID").format(n);
+}
+
 function Section({ title, children }: any) {
     return (
         <div className="bg-white p-6 md:p-8 rounded-2xl border border-[#B2F5EA] shadow-sm hover:shadow-md transition-shadow">
@@ -408,6 +436,37 @@ function Section({ title, children }: any) {
 
 function TwoCol({ children }: any) {
     return <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>;
+}
+
+function CurrencyField({ label, name, setValue, watch, placeholder, disabled }: any) {
+    const value = watch(name) || "";
+
+    const handleChange = (e: any) => {
+        let val = e.target.value.replace(/\D/g, "");
+        if (val) {
+            val = new Intl.NumberFormat("id-ID").format(parseInt(val));
+        }
+        setValue(name, val);
+    };
+
+    return (
+        <div>
+            <label className="text-sm font-semibold text-[#0F2F2E] mb-2 block">{label}</label>
+            <input
+                type="text"
+                value={value}
+                onChange={handleChange}
+                disabled={disabled}
+                placeholder={placeholder}
+                className="w-full px-4 py-3 h-[50px] bg-[#F8FAFC] text-[#0F2F2E] rounded-xl outline-none border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1] transition text-sm font-bold"
+            />
+            {value && (
+                <div className="mt-1 text-[10px] text-[#6B8E8B] font-bold">
+                    Terbilang: {value} Rupiah
+                </div>
+            )}
+        </div>
+    );
 }
 
 function AutoField({ label, register, name, disabled, placeholder, type = "text" }: any) {

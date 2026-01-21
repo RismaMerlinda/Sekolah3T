@@ -198,8 +198,8 @@ export default function AdminVerifikasiPage() {
                         <td className="px-6 py-4 text-[#4A6F6C]">
                           {s.title}
                         </td>
-                        <td className="px-6 py-4 text-[#4A6F6C] font-mono">
-                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(s.targetAmount || 0)}
+                        <td className="px-6 py-4 text-[#4A6F6C] font-bold">
+                          {formatRupiah(s.targetAmount || 0)}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <StatusPill status="pending" />
@@ -248,6 +248,11 @@ function StatusPill({ status }: { status: SchoolStatus }) {
       {v.label}
     </span>
   );
+}
+
+function formatRupiah(n: number) {
+  if (!n) return "Rp 0";
+  return "Rp " + new Intl.NumberFormat("id-ID").format(n);
 }
 
 function SearchIcon() {

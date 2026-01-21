@@ -2,81 +2,73 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/axios";
+import toast from "react-hot-toast";
 
 /* ================= TYPES ================= */
 
-type UsageItem = {
-  tanggal: string;
-  kategori: string;
-  deskripsi: string;
-  jumlah: number;
-  buktiUrl?: string;
-};
-
-type UsageReport = {
-  id: string;
-  schoolId: string;
-  namaSekolah: string;
+type Proposal = {
+  _id: string;
+  title: string;
+  category: string;
+  schoolName: string;
   npsn: string;
-  lokasi: string;
-  submittedAt: string;
-  items: UsageItem[];
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  targetAmount: number;
+  createdAt: string;
 };
-
-const USE_LOCAL_STORAGE = false; // Default: KOSONG (backend belum jalan)
-const LS_USAGE_KEY = "school_usage_reports";
 
 export default function AdminLaporanPage() {
   const router = useRouter();
-  const [reports, setReports] = useState<UsageReport[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
 
   // Guard login
   useEffect(() => {
     const ok = localStorage.getItem("admin_auth") === "true";
     if (!ok) window.location.href = "/admin";
-    loadReports();
+    loadProposals();
   }, []);
 
-  function loadReports() {
-    if (!USE_LOCAL_STORAGE) {
-      setReports([]);
-      return;
-    }
-    const raw = localStorage.getItem(LS_USAGE_KEY);
-    if (!raw) return setReports([]);
-
+  async function loadProposals() {
+    setLoading(true);
     try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return setReports([]);
-      const cleaned: UsageReport[] = parsed
-        .map((x: any) => ({
-          id: String(x?.id ?? ""),
-          schoolId: String(x?.schoolId ?? ""),
-          namaSekolah: String(x?.namaSekolah ?? ""),
-          npsn: String(x?.npsn ?? ""),
-          lokasi: String(x?.lokasi ?? ""),
-          submittedAt: String(x?.submittedAt ?? ""),
-          items: Array.isArray(x?.items) ? x.items : [],
-        }))
-        .filter((x) => x.id);
-      setReports(cleaned);
-    } catch {
-      setReports([]);
+      // Fetch all proposals (Admin view)
+      const res = await api.get("/proposals/admin/all");
+      // Filter out drafts if needed, but usually admin wants to see submitted (pending/approved/rejected)
+      const list = Array.isArray(res.data) ? res.data : [];
+      setProposals(list.filter((p: any) => p.status !== 'draft'));
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal memuat data pengajuan");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUpdateStatus(id: string, status: 'approved' | 'rejected') {
+    if (!confirm(`Yakin ingin mengubah status menjadi ${status.toUpperCase()}?`)) return;
+    try {
+      await api.put(`/proposals/admin/${id}/status`, { status });
+      toast.success(`Pengajuan ${status === 'approved' ? 'Disetujui' : 'Ditolak'}`);
+      loadProposals();
+    } catch (error) {
+      toast.error("Gagal update status");
     }
   }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return reports;
-    return reports.filter((r) => {
+    if (!q) return proposals;
+    return proposals.filter((p) => {
       return (
-        r.namaSekolah.toLowerCase().includes(q) ||
-        r.npsn.toLowerCase().includes(q) ||
-        r.lokasi.toLowerCase().includes(q)
+        p.schoolName.toLowerCase().includes(q) ||
+        p.title.toLowerCase().includes(q) ||
+        p.npsn.toLowerCase().includes(q)
       );
     });
-  }, [reports, query]);
+  }, [proposals, query]);
 
   return (
     <div className="flex flex-col h-full animate-fade-in">
@@ -86,7 +78,7 @@ export default function AdminLaporanPage() {
           <div>
             <div className="text-xs font-bold text-[#6B8E8B] uppercase tracking-wider">Laporan</div>
             <h1 className="text-2xl font-extrabold text-[#0F2F2E] tracking-tight">
-              Laporan Penggunaan Dana
+              Daftar Pengajuan Kampanye
             </h1>
           </div>
 
@@ -98,10 +90,16 @@ export default function AdminLaporanPage() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Cari sekolah, NPSN, lokasi..."
+                placeholder="Cari sekolah, judul, NPSN..."
                 className="w-full rounded-2xl border border-[#B2F5EA] bg-white/50 pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#40E0D0] focus:bg-white focus:ring-4 focus:ring-[#40E0D0]/10 transition-all font-medium text-[#0F2F2E] placeholder:text-[#6B8E8B]/70"
               />
             </div>
+            <button
+              onClick={loadProposals}
+              className="p-2.5 rounded-xl border border-[#B2F5EA] bg-white text-[#1E8F86] hover:bg-[#E6FFFA] transition"
+            >
+              <RefreshIcon />
+            </button>
           </div>
         </div>
       </header>
@@ -114,31 +112,35 @@ export default function AdminLaporanPage() {
           <div className="px-8 py-6 border-b border-[#B2F5EA]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-extrabold text-[#0F2F2E]">
-                Daftar Pelaporan
+                Daftar Masuk
               </h2>
               <p className="text-sm text-[#6B8E8B] font-medium mt-1">
-                Transparansi penggunaan dana oleh sekolah penerima bantuan.
+                Moderasi pengajuan kampanye bantuan dari sekolah-sekolah Sahabat3T.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 bg-[#E6FFFA] rounded-lg text-xs font-bold text-[#40E0D0] border border-[#B2F5EA]">
-                {filtered.length} Laporan
+                {filtered.length} Pengajuan
               </span>
             </div>
           </div>
 
           <div className="flex-1">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-20 text-[#40E0D0]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current"></div>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-[#E6FFFA] flex items-center justify-center text-[#40E0D0] mb-4">
                   <InboxIcon />
                 </div>
                 <div className="text-lg font-bold text-[#0F2F2E]">
-                  Belum ada laporan
+                  Tidak ada pengajuan
                 </div>
                 <p className="mt-2 text-sm text-[#6B8E8B]">
-                  Belum ada sekolah yang mengirimkan rincian penggunaan dana.
+                  Belum ada pengajuan masuk yang membutuhkan moderasi.
                 </p>
               </div>
             ) : (
@@ -147,44 +149,67 @@ export default function AdminLaporanPage() {
                   <thead>
                     <tr className="bg-[#E6FFFA]/50 text-[#0F2F2E] text-xs uppercase tracking-wider font-bold border-b border-[#B2F5EA]">
                       <th className="px-6 py-4 w-16 text-center">No</th>
-                      <th className="px-6 py-4">Nama Sekolah</th>
-                      <th className="px-6 py-4">NPSN</th>
-                      <th className="px-6 py-4">Lokasi</th>
-                      <th className="px-6 py-4 text-center">Jml. Item</th>
-                      <th className="px-6 py-4">Total Penggunaan</th>
+                      <th className="px-6 py-4">Informasi Kampanye</th>
+                      <th className="px-6 py-4">Sekolah</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-right">Target Dana</th>
                       <th className="px-6 py-4 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#B2F5EA]/30 text-sm">
-                    {filtered.map((r, idx) => {
-                      const total = r.items.reduce((a, b) => a + (b.jumlah || 0), 0);
-                      return (
-                        <tr
-                          key={r.id}
-                          className="hover:bg-[#E6FFFA]/40 transition group"
-                        >
-                          <td className="px-6 py-4 text-center text-[#6B8E8B] font-medium">{idx + 1}</td>
-                          <td className="px-6 py-4 font-bold text-[#0F2F2E]">
-                            {r.namaSekolah}
-                            <div className="text-xs text-[#6B8E8B] mt-0.5">{formatDateTime(r.submittedAt)}</div>
-                          </td>
-                          <td className="px-6 py-4 text-[#4A6F6C] font-mono text-xs">{r.npsn}</td>
-                          <td className="px-6 py-4 text-[#4A6F6C]">{r.lokasi}</td>
-                          <td className="px-6 py-4 text-center font-bold text-[#0F2F2E]">{r.items.length}</td>
-                          <td className="px-6 py-4 font-bold text-[#0F2F2E]">
-                            {formatRupiah(total)}
-                          </td>
-                          <td className="px-6 py-4 text-center">
+                    {filtered.map((p, idx) => (
+                      <tr
+                        key={p._id}
+                        className="hover:bg-[#E6FFFA]/40 transition group"
+                      >
+                        <td className="px-6 py-4 text-center text-[#6B8E8B] font-medium">{idx + 1}</td>
+                        <td className="px-6 py-4 font-bold text-[#0F2F2E]">
+                          <div className="max-w-xs overflow-hidden text-ellipsis">{p.title}</div>
+                          <div className="text-[10px] text-[#6B8E8B] mt-0.5 uppercase tracking-wide">{p.category}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-[#0F2F2E]">{p.schoolName}</div>
+                          <div className="text-xs text-[#6B8E8B] font-mono">{p.npsn}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${p.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                            p.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right font-bold text-[#0F2F2E]">
+                          {formatRupiah(p.targetAmount || 0)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
                             <button
-                              onClick={() => router.push(`/admin/detail?id=${encodeURIComponent(r.id)}`)}
-                              className="px-4 py-2 rounded-xl bg-white border border-[#40E0D0] text-[#0F2F2E] text-xs font-bold hover:bg-[#40E0D0] hover:text-white transition shadow-sm"
+                              onClick={() => router.push(`/admin/detail?id=${p._id}`)}
+                              className="px-3 py-1.5 rounded-lg bg-white border border-[#B2F5EA] text-[#0F2F2E] text-xs font-bold hover:shadow-md transition"
                             >
-                              Lihat Detail
+                              Detail
                             </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            {p.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateStatus(p._id, 'approved')}
+                                  className="px-3 py-1.5 rounded-lg bg-[#40E0D0] text-white text-xs font-bold hover:shadow-md transition"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(p._id, 'rejected')}
+                                  className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold hover:shadow-md transition"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -197,27 +222,20 @@ export default function AdminLaporanPage() {
 }
 
 function formatRupiah(n: number) {
-  if (!Number.isFinite(n)) return "Rp0";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function formatDateTime(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(d);
+  if (!n) return "Rp 0";
+  return "Rp " + new Intl.NumberFormat("id-ID").format(n);
 }
 
 // ICONS
 function SearchIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></svg>
   );
 }
 

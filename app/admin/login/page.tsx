@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function AdminLoginPage() {
   const [form, setForm] = useState({
@@ -11,6 +12,7 @@ export default function AdminLoginPage() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -18,6 +20,7 @@ export default function AdminLoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     // ✅ DEMO ADMIN (hardcoded)
     const ADMIN = {
@@ -29,11 +32,29 @@ export default function AdminLoginPage() {
       form.email.trim().toLowerCase() === ADMIN.email &&
       form.password === ADMIN.password
     ) {
-      alert("Login admin berhasil");
+      toast.success("Login admin berhasil! Selamat datang kembali.", {
+        icon: '🔐',
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      });
       localStorage.setItem("admin_auth", "true");
-      window.location.href = "/admin/dashboard";
+
+      // Delay redirect to allow toast visibility
+      setTimeout(() => {
+        window.location.href = "/admin/dashboard";
+      }, 1000);
     } else {
-      alert("Email atau password admin salah");
+      setIsLoading(false);
+      toast.error("Email atau password admin salah. Silakan coba lagi.", {
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      });
     }
   };
 
@@ -136,17 +157,17 @@ export default function AdminLoginPage() {
 
                 {/* PASSWORD */}
                 <div>
-                <label className="text-sm font-semibold text-[#0F2F2E]">Password</label>
+                  <label className="text-sm font-semibold text-[#0F2F2E]">Password</label>
 
-                <div className="relative mt-1">
+                  <div className="relative mt-1">
                     <input
-                    name="password"
-                    type={showPassword ? "text" : "password"}  // showPassword=true => terlihat
-                    required
-                    value={form.password}
-                    onChange={handleChange}
-                    placeholder="Masukkan password"
-                    className="
+                      name="password"
+                      type={showPassword ? "text" : "password"}  // showPassword=true => terlihat
+                      required
+                      value={form.password}
+                      onChange={handleChange}
+                      placeholder="Masukkan password"
+                      className="
                         w-full rounded-xl bg-white/90
                         px-4 py-3 pr-12 text-sm
                         border border-[#B2F5EA]
@@ -156,33 +177,35 @@ export default function AdminLoginPage() {
                     />
 
                     <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="
                         absolute right-3 top-1/2 -translate-y-1/2
                         rounded-lg p-2
                         text-[#6B8E8B] hover:text-[#0F2F2E]
                         hover:bg-black/5 transition
                     "
-                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                      aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                     >
-                    {/* hidden -> EyeOpen, visible -> EyeSlash */}
-                    {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                      {/* hidden -> EyeOpen, visible -> EyeSlash */}
+                      {showPassword ? <EyeIcon /> : <EyeOffIcon />}
                     </button>
-                </div>
+                  </div>
                 </div>
 
 
                 <button
                   type="submit"
+                  disabled={isLoading}
                   className="
                     w-full rounded-full py-3 font-semibold text-white
                     bg-gradient-to-r from-[#40E0D0] to-[#2CB1A6]
                     shadow-lg shadow-[#40E0D0]/35
                     hover:scale-[1.02] active:scale-95 transition
+                    disabled:opacity-70 disabled:cursor-not-allowed
                   "
                 >
-                  Masuk
+                  {isLoading ? "Memproses..." : "Masuk"}
                 </button>
 
                 <p className="text-center text-xs text-[#6B8E8B]">

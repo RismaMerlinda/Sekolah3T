@@ -154,30 +154,30 @@ export default function AdminDashboardPage() {
       <main className="p-4 sm:p-6 lg:p-8 flex-1 space-y-6">
 
         {/* Stats Grid */}
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-6">
           <StatCard
             label="Total Sekolah"
             value={stats.totalSchools}
-            icon={<SchoolIcon />}
-            bgClass="bg-[#0F2F2E]" // Fallback
+            icon={<SchoolIconSmall />}
+            bgClass="bg-[#0F2F2E]"
             textClass="text-white"
-            gradient="from-[#0F2F2E] to-[#0A3F3A]"
+            gradient="from-[#1E8F86] to-[#0F2F2E]"
           />
           <StatCard
             label="Terverifikasi"
             value={stats.verifiedSchools}
-            icon={<CheckIcon />}
-            bgClass="bg-[#059669]" // Fallback
+            icon={<CheckIconSmallest />}
+            bgClass="bg-[#059669]"
             textClass="text-white"
-            gradient="from-[#059669] to-[#047857]"
+            gradient="from-[#10B981] to-[#059669]"
           />
           <StatCard
             label="Menunggu"
             value={stats.pendingSchools}
-            icon={<ClockIcon />}
-            bgClass="bg-[#D97706]" // Fallback
+            icon={<ClockIconSmall />}
+            bgClass="bg-[#D97706]"
             textClass="text-white"
-            gradient="from-[#D97706] to-[#B45309]"
+            gradient="from-[#F59E0B] to-[#D97706]"
           />
         </div>
 
@@ -281,24 +281,60 @@ export default function AdminDashboardPage() {
 
 function StatCard({ label, value, icon, bgClass, textClass, gradient }: any) {
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-white/20 shadow-lg transition-all hover:scale-[1.02] hover:shadow-2xl ${bgClass} ${textClass} flex-1 h-40 flex flex-col items-center justify-center p-2`}>
+    <div className={`relative overflow-hidden rounded-[1.5rem] border border-white/20 shadow-2xl transition-all duration-500 hover:scale-[1.04] hover:-translate-y-1.5 group ${bgClass} ${textClass} w-full sm:w-64 px-6 py-5`}>
 
-      {/* Background Gradient & Glow */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90`} />
-      <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-3xl opacity-50 pointer-events-none" />
-      <div className="absolute top-1/2 -left-10 w-24 h-24 bg-black/10 rounded-full blur-2xl opacity-30 pointer-events-none" />
+      {/* Deep Gradient Background */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-95 transition-opacity duration-500 group-hover:opacity-100`} />
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center gap-2 mt-4">
-        <div className="absolute top-2 left-2 text-xl">{icon}</div>
-        <div className="text-xs font-bold uppercase tracking-wider opacity-90">{label}</div>
-        <div className="text-2xl font-black tracking-tight drop-shadow-sm">{value}</div>
+      {/* Glass Reflection Top Edge */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60" />
+
+      {/* Dynamic Glowing Orb */}
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-3xl transition-all duration-1000 group-hover:scale-150 group-hover:bg-white/30" />
+      <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-black/10 rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-700" />
+
+      {/* Content Layout */}
+      <div className="relative z-10 flex items-center justify-between">
+        {/* Left Side: Labels & Number */}
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-1 group-hover:text-white group-hover:tracking-[0.25em] transition-all duration-300">
+            {label}
+          </span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-4xl font-black text-white tracking-tighter drop-shadow-2xl group-hover:scale-110 transition-transform duration-500 origin-left">
+              {value}
+            </span>
+            <span className="text-[10px] font-bold opacity-0 group-hover:opacity-60 transition-opacity duration-500">Unit</span>
+          </div>
+        </div>
+
+        {/* Right Side: Floating Icon */}
+        <div className="relative">
+          <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-[inset_0_0_15px_rgba(255,255,255,0.1)] group-hover:bg-white/20 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
+            <div className="text-white drop-shadow-lg">{icon}</div>
+          </div>
+          {/* Aura behind icon */}
+          <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
+        </div>
       </div>
 
-      {/* Bottom Pattern */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
+      {/* Interactive Bottom Shine */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+      {/* Thin Inner Border Glow */}
+      <div className="absolute inset-0 border-2 border-white/0 rounded-[1.5rem] group-hover:border-white/10 transition-all duration-500" />
     </div>
   );
+}
+
+function SchoolIconSmall() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 8-4 8 4" /><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2" /><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4" /><path d="M18 5v17" /><path d="M6 5v17" /></svg>
+}
+function CheckIconSmallest() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>
+}
+function ClockIconSmall() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
 }
 
 function SearchIcon() {

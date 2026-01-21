@@ -3,90 +3,17 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-<<<<<<< HEAD
 import api from '@/lib/axios';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Sidebar from '@/app/components/Sidebar';
 import Header from '@/app/components/Header';
 import {
-  Upload, Plus, FileCheck, Trash2, ExternalLink, Clock, FileText
+  Upload, Plus, FileCheck, Trash2, ExternalLink, Clock, FileText, ChevronRight
 } from 'lucide-react';
 
 /* ================= PAGE CONTENT ================= */
 
-=======
-import {
-  Home,
-  ClipboardList,
-  BarChart2,
-  FileText,
-  Clock,
-  TrendingUp,
-  User,
-  LogOut,
-  CheckCircle,
-  XCircle,
-  Upload,
-  Menu,
-  X,
-} from 'lucide-react';
-
-/* ================= TOP NAVBAR ================= */
-function TopNavbar({ user, onMenu }: any) {
-  const avatarLetter =
-    typeof user?.schoolName === 'string'
-      ? user.schoolName.charAt(0).toUpperCase()
-      : 'S';
-
-  return (
-    <div className="h-16 bg-white px-4 md:px-8 flex items-center justify-between border-b border-[#B2F5EA]">
-      {/* MOBILE MENU BUTTON */}
-      <button
-        onClick={onMenu}
-        className="lg:hidden mr-4 text-[#1E8F86] hover:text-[#176F68] transition"
-      >
-        <Menu size={24} />
-      </button>
-
-      {/* SEARCH */}
-      <div className="hidden sm:flex flex-1 justify-start">
-        <div className="relative w-full max-w-md">
-          <input
-            type="text"
-            placeholder="Search for something"
-            className="w-full pl-10 pr-4 py-2 bg-[#E6FFFA] rounded-full text-sm outline-none focus:ring-2 focus:ring-[#40E0D0]"
-          />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B8E8B]">
-            🔍
-          </span>
-        </div>
-      </div>
-
-      {/* PROFILE */}
-      <div
-        className="flex items-center gap-3 cursor-pointer"
-        onClick={() => (window.location.href = '/profil')}
-      >
-        <div className="w-9 h-9 bg-[#40E0D0] text-white rounded-full flex items-center justify-center font-semibold">
-          {avatarLetter}
-        </div>
-
-        <div className="hidden sm:block text-right leading-tight">
-          <p className="text-sm font-medium text-[#0F2F2E] truncate max-w-[140px]">
-            {user?.schoolName}
-          </p>
-          <p className="text-xs text-[#6B8E8B] truncate max-w-[140px]">
-            {user?.email}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ================= PAGE ================= */
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
 export default function LaporanPage() {
   const pathname = usePathname();
   const router = useRouter();
@@ -96,7 +23,6 @@ export default function LaporanPage() {
   const [verified, setVerified] = useState<boolean | null>(null);
   const [openSidebar, setOpenSidebar] = useState(false);
 
-<<<<<<< HEAD
   // Data State
   const [approvedProposals, setApprovedProposals] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
@@ -107,8 +33,6 @@ export default function LaporanPage() {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm();
   const [submitStatus, setSubmitStatus] = useState<'draft' | 'submitted'>('draft');
 
-=======
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (!stored) {
@@ -116,31 +40,35 @@ export default function LaporanPage() {
       return;
     }
 
-    const parsed = JSON.parse(stored);
-    setUser(parsed);
+    try {
+      const parsed = JSON.parse(stored);
+      setUser(parsed);
 
-<<<<<<< HEAD
-    // Fetch School verification
-    if (parsed.npsn) {
-      fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
-        .then(res => res.json())
-        .then(json => {
-          if (json?.data?.satuanPendidikan) {
-            setVerified(true);
-            setOfficialSchool(json.data.satuanPendidikan);
-          } else {
-            setVerified(false);
-          }
-        })
-        .catch(() => setVerified(false));
+      // Fetch School verification
+      if (parsed.npsn) {
+        fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
+          .then(res => res.json())
+          .then(json => {
+            if (json?.data?.satuanPendidikan) {
+              setVerified(true);
+              setOfficialSchool(json.data.satuanPendidikan);
+            } else {
+              setVerified(false);
+            }
+          })
+          .catch(() => setVerified(false));
+      }
+
+      // Fetch Data
+      fetchInitialData();
+    } catch (e) {
+      console.error("Failed to parse user data", e);
+      window.location.href = '/login';
     }
-
-    // Fetch Data
-    fetchInitialData();
-
   }, []);
 
   const fetchInitialData = async () => {
+    setLoadingProposals(true);
     try {
       const [propRes, repRes] = await Promise.all([
         api.get('/proposals'),
@@ -174,6 +102,7 @@ export default function LaporanPage() {
     try {
       const payload = {
         ...data,
+        amount: Number(String(data.amount).replace(/\./g, '')),
         status: submitStatus
       };
 
@@ -278,7 +207,16 @@ export default function LaporanPage() {
 
               <Section title="Rincian Dana">
                 <TwoCol>
-                  <AutoField label="Nominal Dana (Rp)" name="amount" register={register} placeholder="Contoh: 500000" type="number" required />
+                  <div>
+                    <CurrencyField
+                      label="Nominal Dana (Rp)"
+                      name="amount"
+                      setValue={setValue}
+                      watch={watch}
+                      placeholder="Contoh: 500.000"
+                      required
+                    />
+                  </div>
                   <UploadBox label="Upload Bukti Struk/Nota" name="evidence" setValue={setValue} watch={watch} />
                 </TwoCol>
               </Section>
@@ -323,15 +261,15 @@ export default function LaporanPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide
-                                                    ${item.status === 'draft' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-600'}
-                                                `}>
+                                                      ${item.status === 'draft' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-600'}
+                                                  `}>
                           {item.status === 'draft' ? 'Draft' : 'Terkirim'}
                         </span>
                         <span className="text-xs text-[#6B8E8B]">{new Date(item.transactionDate).toLocaleDateString()}</span>
                       </div>
                       <h3 className="font-bold text-[#0F2F2E] text-lg">{item.title}</h3>
                       <p className="text-sm text-[#6B8E8B] text-ellipsis line-clamp-1">{item.description}</p>
-                      <p className="text-xs text-[#1E8F86] font-semibold mt-1">Rp {Number(item.amount).toLocaleString('id-ID')}</p>
+                      <p className="text-xs text-[#1E8F86] font-semibold mt-1">{formatRupiah(item.amount || 0)}</p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -351,203 +289,57 @@ export default function LaporanPage() {
               </div>
             )}
           </div>
-
-=======
-    if (!parsed.npsn) {
-      setVerified(false);
-      return;
-    }
-
-    fetch(`https://api.fazriansyah.eu.org/v1/sekolah?npsn=${parsed.npsn}`)
-      .then(res => res.json())
-      .then(json => {
-        if (json?.data?.satuanPendidikan) {
-          setVerified(true);
-          setOfficialSchool(json.data.satuanPendidikan);
-        } else {
-          setVerified(false);
-        }
-      })
-      .catch(() => setVerified(false));
-  }, []);
-
-  if (!user) {
-    return (
-      <div className="p-10 text-sm text-[#6B8E8B]">
-        Memuat data akun...
-      </div>
-    );
-  }
-
-  const schoolName =
-    officialSchool?.nama || user.schoolName || 'Sekolah';
-
-  return (
-    <div className="min-h-screen flex bg-[#E6FFFA]">
-
-      {/* BACKDROP MOBILE */}
-      {openSidebar && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setOpenSidebar(false)}
-        />
-      )}
-
-      {/* ================= SIDEBAR ================= */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white px-6 py-6 flex flex-col justify-between border-r border-[#B2F5EA] transition-transform duration-300 lg:static lg:translate-x-0 ${openSidebar ? 'translate-x-0' : '-translate-x-full'}`}
-      >
-        <button
-          onClick={() => setOpenSidebar(false)}
-          className="absolute top-4 right-4 lg:hidden text-[#6B8E8B] hover:text-[#EF4444]"
-        >
-          <X size={24} />
-        </button>
-
-        <div>
-          <div className="mb-10">
-            <h1 className="text-lg font-bold text-[#1E8F86] truncate">
-              {schoolName}
-            </h1>
-
-            {verified === null && (
-              <p className="text-xs text-[#6B8E8B]">
-                memeriksa verifikasi...
-              </p>
-            )}
-
-            {verified === true && (
-              <p className="text-xs text-[#22C55E] flex items-center gap-1">
-                <CheckCircle size={14} />
-                Terverifikasi Kemendikbud
-              </p>
-            )}
-
-            {verified === false && (
-              <p className="text-xs text-[#EF4444] flex items-center gap-1">
-                <XCircle size={14} />
-                Belum Terverifikasi
-              </p>
-            )}
-          </div>
-
-          <nav className="space-y-2 text-sm">
-            <MenuLink href="/dashboard" icon={<Home size={18} />} label="Dashboard" active={pathname === '/dashboard'} onClick={() => setOpenSidebar(false)} />
-            <MenuLink href="/pengajuan" icon={<ClipboardList size={18} />} label="Pengajuan" active={pathname === '/pengajuan'} onClick={() => setOpenSidebar(false)} />
-            <MenuLink href="/ringkasan" icon={<BarChart2 size={18} />} label="Ringkasan" active={pathname === '/ringkasan'} onClick={() => setOpenSidebar(false)} />
-            <MenuLink href="/laporan" icon={<FileText size={18} />} label="Laporan" active={pathname === '/laporan'} onClick={() => setOpenSidebar(false)} />
-            <MenuLink href="/timeline" icon={<Clock size={18} />} label="Timeline" active={pathname === '/timeline'} onClick={() => setOpenSidebar(false)} />
-            <MenuLink href="/progress" icon={<TrendingUp size={18} />} label="Progress" active={pathname === '/progress'} onClick={() => setOpenSidebar(false)} />
-            <MenuLink href="/profil" icon={<User size={18} />} label="Profil" active={pathname === '/profil'} onClick={() => setOpenSidebar(false)} />
-          </nav>
-        </div>
-
-        <button
-          onClick={() => {
-            localStorage.clear();
-            window.location.href = '/login';
-          }}
-          className="flex items-center gap-2 text-sm text-[#6B8E8B] hover:text-[#EF4444]"
-        >
-          <LogOut size={18} />
-          Logout
-        </button>
-      </aside>
-
-      {/* ================= MAIN ================= */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopNavbar user={user} onMenu={() => setOpenSidebar(true)} />
-
-        <main className="flex-1 p-4 md:p-6 lg:p-10">
-          <div className="max-w-5xl mx-auto space-y-8">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl md:text-3xl font-bold text-[#0F2F2E]">
-                Form Laporan Penggunaan Dana
-              </h1>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="px-4 py-2 bg-[#CCFBF1] text-[#1E8F86] rounded-lg hover:bg-[#bbf0e5] font-medium text-sm transition"
-              >
-                Kembali
-              </button>
-            </div>
-
-            <Section title="Informasi Kegiatan">
-              <TwoCol>
-                <AutoField label="Judul Kegiatan" placeholder="Contoh: Pembelian Semen" />
-                <DateField label="Tanggal Kegiatan" />
-                <AutoField label="Deskripsi Kegiatan" placeholder="Jelaskan detail pengeluaran..." />
-              </TwoCol>
-            </Section>
-
-            <Section title="Informasi Dana">
-              <TwoCol>
-                <AutoField label="Nominal Dana Terpakai (Rp)" placeholder="Contoh: 500000" />
-                <UploadBox label="Upload Bukti Pembayaran" />
-              </TwoCol>
-
-              <p className="text-sm text-[#6B8E8B] mt-4">
-                Status: <span className="font-medium text-[#F59E0B]">Draft</span>
-              </p>
-            </Section>
-
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-              <button className="px-6 py-2.5 bg-[#CCFBF1] text-[#1E8F86] font-medium rounded-lg hover:bg-[#bbf0e5] transition">
-                Simpan Draft
-              </button>
-              <button className="px-6 py-2.5 bg-[#40E0D0] text-white font-medium rounded-lg hover:bg-[#2CB1A6] transition shadow-lg shadow-[#40E0D0]/20">
-                Kirim Laporan
-              </button>
-            </div>
-          </div>
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
         </main>
       </div>
     </div>
   );
 }
 
-<<<<<<< HEAD
 /* ================= HELPERS (Styled + Functional) ================= */
 
-function Section({ title, children }: any) {
+function formatRupiah(n: number) {
+  if (!n) return "Rp 0";
+  return "Rp " + new Intl.NumberFormat("id-ID").format(n);
+}
+
+function CurrencyField({ label, name, setValue, watch, placeholder, disabled, required }: any) {
+  const value = watch(name) || "";
+
+  const handleChange = (e: any) => {
+    let val = e.target.value.replace(/\D/g, "");
+    if (val) {
+      val = new Intl.NumberFormat("id-ID").format(parseInt(val));
+    }
+    setValue(name, val);
+  };
+
   return (
     <div>
-      <h3 className="text-[#1E8F86] font-bold mb-4 pb-2 border-b border-[#F1F5F9] flex items-center gap-2">
-        <FileCheck size={18} /> {title}
-      </h3>
-=======
-/* ================= COMPONENTS ================= */
-
-function MenuLink({ href, icon, label, active, onClick }: any) {
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-2 rounded-lg transition
-        ${active
-          ? 'bg-[#CCFBF1] text-[#1E8F86] font-medium'
-          : 'text-[#4A6F6C] hover:bg-[#E6FFFA] hover:text-[#40E0D0]'
-        }`}
-    >
-      {icon}
-      {label}
-    </Link>
+      <label className="text-sm font-semibold text-[#0F2F2E] mb-2 block">{label} {required && '*'}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={handleChange}
+        disabled={disabled}
+        placeholder={placeholder}
+        className="w-full px-4 py-3 h-[50px] bg-[#F8FAFC] text-[#0F2F2E] rounded-xl outline-none border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1] transition text-sm font-bold"
+      />
+    </div>
   );
 }
 
 function Section({ title, children }: any) {
   return (
     <div className="bg-white p-6 rounded-xl border border-[#B2F5EA] shadow-sm">
-      <h2 className="font-bold text-[#1E8F86] mb-4 text-lg">{title}</h2>
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
+      <h3 className="text-[#1E8F86] font-bold mb-4 pb-2 border-b border-[#F1F5F9] flex items-center gap-2">
+        <FileCheck size={18} /> {title}
+      </h3>
       {children}
     </div>
   );
 }
 
 function TwoCol({ children }: any) {
-<<<<<<< HEAD
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>;
 }
 
@@ -560,33 +352,11 @@ function AutoField({ label, name, register, placeholder, type = "text", required
         placeholder={placeholder}
         {...(register ? register(name, { required }) : {})}
         className="w-full px-4 py-3 bg-[#F8FAFC] text-[#0F2F2E] rounded-xl outline-none border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1] transition text-sm font-medium"
-=======
-  return <div className="grid grid-cols-1 md:grid-cols-2 gap-5">{children}</div>;
-}
-
-/* === AUTO FIELD: ENTER + AUTO HEIGHT + NO SCROLLBAR === */
-function AutoField({ label, value, disabled, placeholder }: any) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-[#0F2F2E] mb-1 block">{label}</label>
-      <input
-        type="text"
-        defaultValue={value}
-        disabled={disabled}
-        placeholder={placeholder}
-        className={`w-full px-4 py-2 rounded-lg outline-none border transition
-          ${disabled
-            ? 'bg-gray-50 text-[#6B8E8B] border-gray-200 cursor-not-allowed'
-            : 'bg-[#E6FFFA] text-[#0F2F2E] border-transparent focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1]'
-          }
-        `}
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
       />
     </div>
   );
 }
 
-<<<<<<< HEAD
 function DateField({ label, name, register, required }: any) {
   return (
     <div>
@@ -595,21 +365,11 @@ function DateField({ label, name, register, required }: any) {
         type="date"
         {...(register ? register(name, { required }) : {})}
         className="w-full px-4 py-3 bg-[#F8FAFC] text-[#0F2F2E] rounded-xl outline-none border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1] transition text-sm font-medium"
-=======
-function DateField({ label }: any) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-[#0F2F2E] mb-1 block">{label}</label>
-      <input
-        type="date"
-        className="w-full px-4 py-2 bg-[#E6FFFA] text-[#0F2F2E] rounded-lg outline-none border border-transparent focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1] transition"
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
       />
     </div>
   );
 }
 
-<<<<<<< HEAD
 function UploadBox({ label, name, setValue, watch }: any) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -658,7 +418,7 @@ function UploadBox({ label, name, setValue, watch }: any) {
         <>
           <div
             onClick={() => !uploading && ref.current?.click()}
-            className={`w-full h-[50px] bg-[#F8FAFC] rounded-xl flex items-center gap-3 px-4 cursor-pointer hover:bg-[#E6FFFA] border border-dashed border-[#CBD5E1] hover:border-[#40E0D0] transition group ${uploading ? 'opacity-50' : ''}`}
+            className={`w-full h-[54px] bg-[#F8FAFC] rounded-xl flex items-center gap-3 px-4 cursor-pointer hover:bg-[#E6FFFA] border border-dashed border-[#CBD5E1] hover:border-[#40E0D0] transition group ${uploading ? 'opacity-50' : ''}`}
           >
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-[#E2E8F0] group-hover:border-[#40E0D0]">
               <Upload size={16} className={`${uploading ? 'animate-bounce' : ''} text-[#6B8E8B] group-hover:text-[#1E8F86] transition`} />
@@ -670,30 +430,6 @@ function UploadBox({ label, name, setValue, watch }: any) {
           <input ref={ref} type="file" hidden onChange={handleFile} disabled={uploading} />
         </>
       )}
-=======
-function UploadBox({ label }: any) {
-  const ref = useRef<HTMLInputElement>(null);
-
-  return (
-    <div>
-      <label className="text-sm font-medium text-[#0F2F2E] mb-1 block">{label}</label>
-      <div
-        onClick={() => ref.current?.click()}
-        className="w-full h-[42px] bg-[#E6FFFA] rounded-lg flex items-center gap-3 px-4 cursor-pointer hover:bg-[#CCFBF1] border border-dashed border-[#40E0D0] transition group"
-      >
-        <Upload size={18} className="text-[#1E8F86] group-hover:scale-110 transition-transform" />
-        <span className="text-sm text-[#4A6F6C]">
-          Upload file (JPG, PNG, PDF, WORD)
-        </span>
-      </div>
-
-      <input
-        ref={ref}
-        type="file"
-        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-        hidden
-      />
->>>>>>> 77e6c2b176af517e26347389d6172186670b99c9
     </div>
   );
 }

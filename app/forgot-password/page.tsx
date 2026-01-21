@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
     const onSubmit = async (data: ForgotForm) => {
         setIsLoading(true);
         try {
-            await api.post("/api/auth/sekolah/forgot-password", data);
+            await api.post("/auth/forgot-password", data);
             setIsSuccess(true);
             toast.success("Link reset password terkirim!");
         } catch (error: any) {
@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
                     </div>
                     <h2 className="text-2xl font-bold text-neutral-heading mb-2">Cek Email Anda</h2>
                     <p className="text-neutral-body mb-6">Instruksi reset password telah dikirim ke email anda.</p>
-                    <Link href="/sekolah/login">
+                    <Link href="/login">
                         <Button variant="outline">Kembali ke Login</Button>
                     </Link>
                 </Card>
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
                 </form>
 
                 <div className="mt-4 text-center">
-                    <Link href="/sekolah/login" className="text-sm text-neutral-body hover:text-primary">
+                    <Link href="/login" className="text-sm text-neutral-body hover:text-primary">
                         Kembali ke Login
                     </Link>
                 </div>
