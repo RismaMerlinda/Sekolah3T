@@ -43,8 +43,11 @@ export default function RegisterPage() {
     const onSubmit = async (data: RegisterForm) => {
         setIsLoading(true);
         try {
+<<<<<<< HEAD
             console.log("DATA DIKIRIM:", data);
 
+=======
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
             await api.post("/auth/register", {
                 schoolName: data.schoolName,
                 npsn: data.npsn,
@@ -80,7 +83,11 @@ export default function RegisterPage() {
     // ================= SUCCESS PAGE =================
     if (isSuccess) {
         return (
+<<<<<<< HEAD
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
+=======
+            <div className="min-h-screen flex items-center justify-center bg-secondary-bg">
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
                 <Card className="p-8 text-center shadow-xl">
                     <h2 className="text-2xl font-bold text-green-600 mb-4">✅ Registrasi Berhasil!</h2>
                     <p>Akun sekolah Anda telah dibuat.</p>

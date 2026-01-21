@@ -1,14 +1,20 @@
 'use client';
 
+<<<<<<< HEAD
 import { useEffect, useState } from 'react';
+=======
+import { useEffect, useState, useRef } from 'react';
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import Sidebar from '@/app/components/Sidebar';
 import Header from '@/app/components/Header';
 import {
-  TrendingUp, Image as ImageIcon,
-  Loader2
+  TrendingUp,
+  Image as ImageIcon,
+  Loader2,
+  ImageOff
 } from 'lucide-react';
 
 import { ImageOff as ImageOffIcon } from 'lucide-react';
@@ -37,6 +43,7 @@ export default function ProgressPage() {
       const parsed = JSON.parse(stored);
       setUser(parsed);
 
+<<<<<<< HEAD
       if (parsed.npsn) {
         fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
           .then(res => res.json())
@@ -55,6 +62,20 @@ export default function ProgressPage() {
     } catch (e) {
       console.error("Failed to parse user", e);
       window.location.href = '/login';
+=======
+    if (parsed.npsn) {
+      fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json?.data?.satuanPendidikan) {
+            setVerified(true);
+            setOfficialSchool(json.data.satuanPendidikan);
+          } else {
+            setVerified(false);
+          }
+        })
+        .catch(() => setVerified(false));
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
     }
   }, []);
 
@@ -137,7 +158,11 @@ export default function ProgressPage() {
             /* EMPTY STATE */
             <div className="bg-white p-12 rounded-2xl shadow-sm border border-[#B2F5EA] text-center flex flex-col items-center">
               <div className="w-20 h-20 bg-[#F1F5F9] rounded-full flex items-center justify-center mb-6">
+<<<<<<< HEAD
                 <ImageOffIcon size={40} className="text-[#94A3B8]" />
+=======
+                <ImageOff size={32} className="text-[#94A3B8]" />
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
               </div>
               <h2 className="text-xl font-bold text-[#1E8F86] mb-2">Belum Ada Project Berjalan</h2>
               <p className="text-[#6B8E8B] max-w-md mx-auto mb-6">

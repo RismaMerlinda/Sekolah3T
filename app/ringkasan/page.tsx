@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+<<<<<<< HEAD
 import Link from 'next/link';
+=======
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 import { usePathname, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import Sidebar from '@/app/components/Sidebar';
@@ -13,9 +16,7 @@ import {
   Layers,
   Clock,
   CheckCircle,
-  Menu,
-  Bell,
-  Search
+  Calendar
 } from 'lucide-react';
 
 /* ================= MAIN PAGE COMPONENTS ================= */
@@ -38,7 +39,11 @@ function StatCard({ title, value, icon: Icon, colorClass, subtext }: any) {
 }
 
 function StatusDistribution({ stats }: any) {
+<<<<<<< HEAD
   const total = Object.values(stats).reduce((a: any, b: any) => a + (typeof b === 'number' ? b : 0), 0) as number;
+=======
+  const total = Object.values(stats).reduce((a: any, b: any) => a + Number(b), 0) as number;
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-[#B2F5EA] shadow-sm min-h-[300px]">
@@ -152,9 +157,14 @@ export default function RingkasanPage() {
       return;
     }
 
+<<<<<<< HEAD
     try {
       const parsed = JSON.parse(stored);
       setUser(parsed);
+=======
+    const parsed = JSON.parse(stored);
+    setUser(parsed);
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 
       // Verification Check
       if (parsed.npsn) {

@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+<<<<<<< HEAD
 import Link from 'next/link';
+=======
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 import { usePathname, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import Sidebar from '@/app/components/Sidebar';
@@ -51,6 +54,7 @@ export default function TimelinePage() {
       const parsed = JSON.parse(stored);
       setUser(parsed);
 
+<<<<<<< HEAD
       if (parsed.npsn) {
         fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
           .then(res => res.json())
@@ -72,6 +76,18 @@ export default function TimelinePage() {
         .then(res => {
           const approved = res.data.some((p: any) => p.status === 'approved');
           setHasApprovedProposal(approved);
+=======
+    if (parsed.npsn) {
+      fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json?.data?.satuanPendidikan) {
+            setVerified(true);
+            setOfficialSchool(json.data.satuanPendidikan);
+          } else {
+            setVerified(false);
+          }
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
         })
         .catch(err => console.error(err))
         .finally(() => setLoading(false));
@@ -137,7 +153,10 @@ export default function TimelinePage() {
   };
 
   const triggerAdd = () => addInputRef.current?.click();
+<<<<<<< HEAD
 
+=======
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
   const triggerEdit = (index: number) => {
     setEditIndex(index);
     setTimeout(() => {
@@ -227,6 +246,11 @@ export default function TimelinePage() {
                       <UploadCloud size={20} />
                       Upload Dokumen
                     </button>
+<<<<<<< HEAD
+=======
+                    <input type="file" multiple hidden ref={addInputRef} onChange={handleAddFile} accept=".jpg,.jpeg,.png,.pdf" />
+                    <input type="file" hidden ref={editInputRef} onChange={handleEditFile} accept=".jpg,.jpeg,.png,.pdf" />
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
                   </div>
 
                   {files.length > 0 && (
@@ -253,6 +277,17 @@ export default function TimelinePage() {
                               <Trash2 size={16} />
                             </button>
                           </div>
+<<<<<<< HEAD
+=======
+                          <div className="flex gap-1">
+                            <button onClick={() => triggerEdit(idx)} className="text-[#1E8F86] hover:bg-[#E6FFFA] p-1.5 rounded-lg transition">
+                              <Pencil size={14} />
+                            </button>
+                            <button onClick={() => handleDeleteFile(idx)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
                         </div>
                       ))}
                     </div>
@@ -296,6 +331,11 @@ export default function TimelinePage() {
   );
 }
 
+<<<<<<< HEAD
+=======
+/* ================= HELPERS ================= */
+
+>>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 function TimelineItem({ date, title, description, children, icon, color = "bg-[#40E0D0]", active, last }: any) {
   return (
     <div className="relative">
