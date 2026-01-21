@@ -44,7 +44,7 @@ function ResetPasswordContent() {
 
         setIsLoading(true);
         try {
-            await api.post("/auth/sekolah/reset-password", {
+            await api.post("/api/auth/sekolah/reset-password", {
                 token,
                 newPassword: data.password,
             });

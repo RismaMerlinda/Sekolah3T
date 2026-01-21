@@ -46,7 +46,7 @@ export default function RegisterPage() {
         try {
             console.log("DATA DIKIRIM:", data); // 🔥 DEBUG
 
-            await api.post("/auth/register", {
+            await api.post("/api/auth/register", {
                 schoolName: data.schoolName,
                 npsn: data.npsn,
                 email: data.email,

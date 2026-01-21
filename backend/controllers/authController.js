@@ -3,27 +3,29 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 /* ================= REGISTER ================= */
+
 exports.register = async (req, res) => {
   try {
-    const { full_name, email, password } = req.body;
+    const { schoolName, npsn, email, password } = req.body;
 
-    if (!full_name || !email || !password) {
+    if (!schoolName || !npsn || !email || !password) {
       return res.status(400).json({
         message: 'Semua field wajib diisi',
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ $or: [{ email }, { npsn }] });
     if (existingUser) {
       return res.status(400).json({
-        message: 'Email sudah terdaftar',
+        message: 'Email atau NPSN sudah terdaftar',
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      full_name,
+      schoolName,
+      npsn,
       email,
       password: hashedPassword,
     });
@@ -32,7 +34,8 @@ exports.register = async (req, res) => {
       message: 'Register berhasil',
       user: {
         id: user._id,
-        full_name: user.full_name,
+        schoolName: user.schoolName,
+        npsn: user.npsn,
         email: user.email,
       },
     });
@@ -78,7 +81,8 @@ exports.login = async (req, res) => {
       token,
       user: {
         id: user._id,
-        full_name: user.full_name,
+        schoolName: user.schoolName,
+        npsn: user.npsn,
         email: user.email,
       },
     });
