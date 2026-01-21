@@ -25,6 +25,7 @@ app.use('/api/proxy', require('./routes/proxy.routes'));
 app.use('/api/proposals', require('./routes/proposalRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/schools', require('./routes/schoolRoutes'));
 
 // Serve Uploads Static Folder
 app.use('/uploads', express.static('uploads'));

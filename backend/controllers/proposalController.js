@@ -93,3 +93,42 @@ exports.submitProposal = async (req, res) => {
         res.status(500).json({ message: 'Gagal mengirim proposal', error: error.message });
     }
 };
+
+// ADMIN: Get All Proposals
+exports.getAllProposals = async (req, res) => {
+    try {
+        const { status } = req.query;
+        let filter = {};
+
+        // If status query param is provided, use it
+        if (status) {
+            // Handle multiple statuses (e.g. pending,approved) if needed, or simple string
+            filter.status = status;
+        }
+
+        const proposals = await Proposal.find(filter)
+            .sort({ updatedAt: -1 });
+
+        res.json(proposals);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// ADMIN: Update Status (Approve/Reject)
+exports.updateStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'approved' | 'rejected'
+
+        const proposal = await Proposal.findById(id);
+        if (!proposal) return res.status(404).json({ message: 'Proposal tidak ditemukan' });
+
+        proposal.status = status;
+        await proposal.save();
+
+        res.json(proposal);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal update status', error: error.message });
+    }
+};

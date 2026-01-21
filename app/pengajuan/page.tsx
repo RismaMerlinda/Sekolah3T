@@ -301,12 +301,21 @@ export default function PengajuanPage() {
 
     useEffect(() => {
         const stored = localStorage.getItem('user');
-        if (!stored) {
+        if (!stored || stored === "undefined") {
             window.location.href = '/login';
             return;
         }
 
-        const parsed = JSON.parse(stored);
+        let parsed;
+        try {
+            parsed = JSON.parse(stored);
+        } catch (e) {
+            console.error("Failed to parse user data", e);
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+            return;
+        }
+
         setUser(parsed);
 
         // API PROXY

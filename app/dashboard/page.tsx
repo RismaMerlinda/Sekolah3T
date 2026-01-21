@@ -107,12 +107,21 @@ export default function DashboardPage() {
     // Initial Load & Verification
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
+        if (!storedUser || storedUser === "undefined") {
             window.location.href = '/login';
             return;
         }
 
-        const parsed = JSON.parse(storedUser);
+        let parsed;
+        try {
+            parsed = JSON.parse(storedUser);
+        } catch (e) {
+            console.error("Failed to parse user data", e);
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+            return;
+        }
+
         setUser(parsed);
 
         // Fetch Kemendikbud Data via Next.js API Route (Same Origin - No CORS)
