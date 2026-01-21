@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+
 import toast from 'react-hot-toast';
 import api from '@/lib/axios'; // Axios instance with token
 import { useForm } from 'react-hook-form';
@@ -19,10 +20,18 @@ import {
     Plus,
     FileCheck,
     ExternalLink,
-    FileText
+    FileText,
+    TrendingUp,
+    Home,
+    BarChart2,
+    User,
+    LogOut,
+    Menu,
+    XCircle,
+    AlertCircle
 } from 'lucide-react';
 
-/* ================= COMPONENT: DRAFT LIST ================= */
+/* === COMPONENT: DRAFT LIST === */
 
 function DraftList({ onEdit, onNew }: any) {
     const [drafts, setDrafts] = useState<any[]>([]);
@@ -132,7 +141,7 @@ function DraftList({ onEdit, onNew }: any) {
     );
 }
 
-/* ================= COMPONENT: PROPOSAL FORM ================= */
+/* === COMPONENT: PROPOSAL FORM === */
 
 function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: any) {
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
@@ -284,7 +293,7 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
     );
 }
 
-/* ================= PAGE ROOT ================= */
+/* === PAGE === */
 
 export default function PengajuanPage() {
     const pathname = usePathname();
@@ -386,7 +395,7 @@ export default function PengajuanPage() {
     );
 }
 
-/* ================= HELPERS (Updated Multiple Files) ================= */
+/* === HELPERS === */
 
 function Section({ title, children }: any) {
     return (
@@ -506,45 +515,54 @@ function UploadBox({ label, name, setValue, watch, multiple = false }: any) {
                 {files.length > 0 && files.map((url: string, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
                         <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                            <FileCheck size={18} className="text-green-600" />
+                            <FileCheck size={16} className="text-[#1E8F86]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-xs text-green-700 font-medium truncate">{url.split('/').pop()}</p>
-                            <a href={url} target="_blank" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 mt-0.5">
-                                <ExternalLink size={10} /> Lihat File
+                            <p className="text-xs font-bold text-[#0F2F2E] truncate">File Terlampir {files.length > 1 ? idx + 1 : ''}</p>
+                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#1E8F86] hover:underline flex items-center gap-1">
+                                <ExternalLink size={10} /> Lihat di tab baru
                             </a>
                         </div>
-                        {setValue && ( // Only show delete button if setValue provided (writable)
-                            <button
-                                type="button"
-                                onClick={() => removeFile(idx)}
-                                className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                            >
-                                <Trash2 size={16} />
+                        {setValue && (
+                            <button onClick={() => removeFile(idx)} className="p-1.5 text-gray-400 hover:text-red-500 transition">
+                                <X size={14} />
                             </button>
                         )}
                     </div>
                 ))}
 
-                {/* Upload Button */}
-                {(!setValue) ? null : (!multiple && files.length > 0) ? null : (
+                {/* Dropzone / Button */}
+                {setValue && (multiple || files.length === 0) && (
                     <div
-                        onClick={() => !uploading && ref.current?.click()}
-                        className={`w-full h-[50px] bg-[#F8FAFC] rounded-xl flex items-center gap-3 px-4 cursor-pointer hover:bg-[#E6FFFA] border border-dashed border-[#CBD5E1] hover:border-[#40E0D0] transition group
-                            ${uploading ? 'opacity-70 cursor-wait' : ''}
-                        `}
+                        onClick={() => ref.current?.click()}
+                        className={`border-2 border-dashed border-[#B2F5EA] rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#F0FDFA] transition
+                        ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-[#E2E8F0] group-hover:border-[#40E0D0]">
-                            <Upload size={16} className={`${uploading ? 'animate-bounce' : ''} text-[#6B8E8B] group-hover:text-[#1E8F86] transition`} />
+                        <input type="file" ref={ref} onChange={handleFile} className="hidden" />
+                        <div className="w-10 h-10 bg-[#E6FFFA] rounded-full flex items-center justify-center text-[#1E8F86]">
+                            <Plus size={20} />
                         </div>
-                        <span className="text-sm text-[#94A3B8] group-hover:text-[#40E0D0] font-medium">
-                            {uploading ? 'Mengupload...' : (multiple ? 'Tambah File Foto (+)' : 'Upload file (PDF, JPG)')}
-                        </span>
+                        <p className="text-xs font-bold text-[#1E8F86]">{uploading ? 'Sedang mengupload...' : 'Klik untuk upload'}</p>
                     </div>
                 )}
             </div>
-
-            <input ref={ref} type="file" hidden onChange={handleFile} disabled={uploading} />
         </div>
+    );
+}
+
+function MenuLink({ href, icon, label, active, onClick }: any) {
+    return (
+        <Link
+            href={href}
+            onClick={onClick}
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm
+      ${active
+                    ? 'bg-[#E6FFFA] text-[#1E8F86]'
+                    : 'text-[#6B8E8B] hover:bg-[#F1F5F9] hover:text-[#40E0D0]'
+                }`}
+        >
+            {icon}
+            {label}
+        </Link>
     );
 }

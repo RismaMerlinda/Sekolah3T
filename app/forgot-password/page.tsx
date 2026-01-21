@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
     const onSubmit = async (data: ForgotForm) => {
         setIsLoading(true);
         try {
-            await api.post("/auth/sekolah/forgot-password", data);
+            await api.post("/api/auth/sekolah/forgot-password", data);
             setIsSuccess(true);
             toast.success("Link reset password terkirim!");
         } catch (error: any) {

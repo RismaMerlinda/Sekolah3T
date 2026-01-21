@@ -15,17 +15,19 @@ import {
     ChevronRight,
     AlertCircle,
     CheckCircle,
-    XCircle
+    XCircle,
+    FileText
 } from 'lucide-react';
+import Link from 'next/link';
 
-/* ================= TYPES ================= */
+/* === TYPES === */
 interface UserData {
     schoolName: string;
     email: string;
     npsn?: string;
 }
 
-/* ================= COMPONENTS (LOCAL) ================= */
+/* === COMPONENTS (LOCAL) === */
 
 function StatCard({ title, value, icon, type = 'info' }: any) {
     return (
@@ -85,7 +87,7 @@ function EmptyState({ icon, title, description, action, onAction }: any) {
     );
 }
 
-/* ================= MAIN DASHBOARD PAGE ================= */
+/* === MAIN DASHBOARD PAGE === */
 
 export default function DashboardPage() {
     const pathname = usePathname();
@@ -155,11 +157,11 @@ export default function DashboardPage() {
             ]);
 
             // Calculate Total Budget (Target Amount of Approved Proposals)
-            const approvedProposals = proposalsRes.data.filter((p: any) => p.status === 'approved');
+            const approvedProposals = (proposalsRes.data || []).filter((p: any) => p.status === 'approved');
             const totalBudget = approvedProposals.reduce((sum: number, p: any) => sum + (Number(p.targetAmount) || 0), 0);
 
             // Calculate Used Budget (Sum of Report Amounts - Submitted)
-            const submittedReports = reportsRes.data.filter((r: any) => r.status === 'submitted');
+            const submittedReports = (reportsRes.data || []).filter((r: any) => r.status === 'submitted');
             const usedBudget = submittedReports.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0);
 
             setStats({

@@ -5,45 +5,64 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const proxyRoutes = require('./routes/proxy.routes');
+const proposalRoutes = require('./routes/proposalRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const schoolRoutes = require('./routes/schoolRoutes');
+const donorRoutes = require('./routes/donor.routes');
 
 const app = express();
 
 app.use(cors({
-  origin: true, // Allow dynamic origin
-  credentials: true // Izinkan cookie/session
+  origin: "http://localhost:3000",
+  credentials: true
 }));
 app.use(express.json());
 
+// Main Connection and Server Start
+const MONGODB_URL = process.env.MONGODB_URL || process.env.MONGODB_URI;
+const PORT = process.env.PORT || 5000;
+
+console.log("[1] Starting server...");
+
 mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.log(err));
+  .connect(MONGODB_URL, {
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+  })
+  .then(() => {
+    console.log("[2] ✓ MongoDB connected");
 
-app.use('/api/auth', authRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/proxy', require('./routes/proxy.routes'));
-app.use('/api/proposals', require('./routes/proposalRoutes'));
-app.use('/api/upload', require('./routes/uploadRoutes'));
-app.use('/api/reports', require('./routes/reportRoutes'));
-app.use('/api/schools', require('./routes/schoolRoutes'));
+    // Load routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/dashboard', dashboardRoutes);
+    app.use('/api/proxy', proxyRoutes);
+    app.use('/api/proposals', proposalRoutes);
+    app.use('/api/upload', uploadRoutes);
+    app.use('/api/reports', reportRoutes);
+    app.use('/api/schools', schoolRoutes);
+    app.use("/api/donor", donorRoutes);
 
-// Serve Uploads Static Folder
-app.use('/uploads', express.static('uploads'));
+    console.log("[3] ✓ All routes loaded");
 
-const startServer = (port) => {
-  const server = app.listen(port, () => {
-    console.log(`✅ Server running on http://localhost:${port}`);
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`[4] ✓ Server listening on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("[ERROR] MongoDB:", err.message);
   });
 
-  server.on('error', (error) => {
-    if (error.code === 'EADDRINUSE') {
-      console.log(`⚠️ Port ${port} is busy, trying ${port + 1}...`);
-      startServer(port + 1);
-    } else {
-      console.error('❌ Server error:', error);
-    }
-  });
-};
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", message: "Server is running" });
+});
 
-const PORT = parseInt(process.env.PORT || 5000);
-startServer(PORT);
+process.on("unhandledRejection", (err) => {
+  console.error("[REJECT]", err.message);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[EXCEPTION]", err.message);
+});
