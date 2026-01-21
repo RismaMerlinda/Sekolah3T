@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 /* ================= TYPES ================= */
 
@@ -35,9 +35,6 @@ const LS_USAGE_KEY = "school_usage_reports";
 
 export default function AdminLaporanPage() {
   const router = useRouter();
-  const pathname = usePathname();
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [reports, setReports] = useState<UsageReport[]>([]);
   const [query, setQuery] = useState("");
@@ -56,16 +53,6 @@ export default function AdminLaporanPage() {
     return () => window.removeEventListener("focus", onFocus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // ✅ lock scroll saat drawer kebuka
-  useEffect(() => {
-    if (!sidebarOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [sidebarOpen]);
 
   function loadReports() {
     // ✅ default kosong dulu sampai backend ada
@@ -100,11 +87,6 @@ export default function AdminLaporanPage() {
     }
   }
 
-  function logout() {
-    localStorage.removeItem("admin_auth");
-    window.location.href = "/admin";
-  }
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return reports;
@@ -117,259 +99,128 @@ export default function AdminLaporanPage() {
     });
   }, [reports, query]);
 
-  const SidebarContent = (
-    <div className="h-full flex flex-col">
-      <div className="px-6 py-6">
-        <div className="text-lg font-extrabold text-[#0F2F2E]">Admin</div>
-        <div className="text-xs text-[#6B8E8B] mt-1">SAHABAT3T Portal</div>
-      </div>
-
-      <nav className="px-4 flex-1 space-y-2">
-        <SidebarItem
-          label="Dashboard"
-          href="/admin/dashboard"
-          active={pathname === "/admin/dashboard"}
-          onClick={() => setSidebarOpen(false)}
-        />
-        <SidebarItem
-          label="Verifikasi"
-          href="/admin/verifikasi"
-          active={pathname === "/admin/verifikasi"}
-          onClick={() => setSidebarOpen(false)}
-        />
-        <SidebarItem
-          label="Laporan"
-          href="/admin/laporan"
-          active={pathname === "/admin/laporan"}
-          onClick={() => setSidebarOpen(false)}
-        />
-        <SidebarItem
-          label="Profil Sekolah"
-          href="/admin/profil-sekolah"
-          active={pathname === "/admin/profil-sekolah"}
-          onClick={() => setSidebarOpen(false)}
-        />
-      </nav>
-
-      <div className="px-4 pb-6">
-        <button
-          onClick={() => {
-            setSidebarOpen(false);
-            logout();
-          }}
-          className="w-full rounded-xl px-4 py-3 text-sm font-semibold
-                     border border-[#B2F5EA] bg-white/80
-                     hover:shadow-md transition"
-          type="button"
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-[#E6FFFA]">
-      {/* background glow */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-[#40E0D0]/20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-[#2CB1A6]/20 blur-3xl" />
-      </div>
+    <div className="flex flex-col min-h-screen animate-fade-in">
+      {/* TOPBAR */}
+      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-[#B2F5EA]">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-xs font-bold text-[#6B8E8B] uppercase tracking-wider">Laporan</div>
+            <h1 className="text-2xl font-extrabold text-[#0F2F2E] tracking-tight">
+              Laporan Penggunaan Dana
+            </h1>
+          </div>
 
-      {/* ===== MOBILE DRAWER SIDEBAR ===== */}
-      <div
-        className={`fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] transition-opacity lg:hidden ${
-          sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-        onClick={() => setSidebarOpen(false)}
-      />
-      <aside
-        className={`fixed left-0 top-0 z-50 h-full w-[280px] bg-white/90 border-r border-[#B2F5EA]
-                    shadow-xl transition-transform lg:hidden
-                    ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-        {SidebarContent}
-      </aside>
-
-      {/* ===== DESKTOP LAYOUT ===== */}
-      <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
-        <aside className="hidden lg:block bg-white/70 lg:border-r border-[#B2F5EA]">
-          {SidebarContent}
-        </aside>
-
-        {/* MAIN */}
-        <div className="flex flex-col min-h-screen">
-          {/* TOPBAR */}
-          <header className="sticky top-0 z-20 bg-white/70 backdrop-blur border-b border-[#B2F5EA]">
-            <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden mt-0.5 rounded-xl p-2
-                             border border-[#B2F5EA] bg-white/80
-                             hover:shadow-md transition"
-                  aria-label="Buka menu"
-                >
-                  <MenuIcon />
-                </button>
-
-                <div>
-                  <div className="text-xs font-semibold text-[#6B8E8B]">
-                    Laporan
-                  </div>
-                  <h1 className="text-lg sm:text-xl font-extrabold text-[#0F2F2E]">
-                    Laporan Penggunaan Dana
-                  </h1>
-                </div>
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            <div className="relative group w-full lg:w-80">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B8E8B] transition group-focus-within:text-[#40E0D0]">
+                <SearchIcon />
               </div>
-
-              {/* Search */}
-              <div className="w-full sm:w-[420px]">
-                <div className="flex items-center gap-2 rounded-full bg-white/85 border border-[#B2F5EA] px-4 py-2 shadow-sm hover:shadow-md transition">
-                  <SearchIcon />
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Cari sekolah / NPSN / lokasi..."
-                    className="bg-transparent outline-none text-sm w-full text-[#0F2F2E]"
-                  />
-                </div>
-              </div>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cari sekolah / NPSN / lokasi..."
+                className="w-full rounded-2xl border border-[#B2F5EA] bg-white/50 pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#40E0D0] focus:bg-white focus:ring-4 focus:ring-[#40E0D0]/10 transition-all font-medium text-[#0F2F2E] placeholder:text-[#6B8E8B]/70"
+              />
             </div>
-          </header>
-
-          {/* CONTENT */}
-          <main className="p-4 sm:p-6 lg:p-8 flex-1">
-            <div className="rounded-3xl bg-white/75 border border-[#B2F5EA] shadow-xl shadow-[#40E0D0]/10 overflow-hidden">
-              <div className="px-6 py-4">
-                <h2 className="text-base sm:text-lg font-extrabold text-[#0F2F2E]">
-                  Daftar Sekolah yang Sudah Input Rincian
-                </h2>
-                <p className="text-sm text-[#6B8E8B] mt-1">
-                  Kelola dan tinjau laporan penggunaan dana dari sekolah-sekolah
-                </p>
-              </div>
-
-              {filtered.length === 0 ? (
-                <div className="px-6 pb-8">
-                  <div className="rounded-2xl bg-white/80 border border-[#B2F5EA] p-6 text-center">
-                    <div className="text-base font-extrabold text-[#0F2F2E]">
-                      Belum ada laporan penggunaan dana
-                    </div>
-                    <p className="mt-2 text-sm text-[#6B8E8B]">
-                      Belum ada data yang diinput.
-                    </p>
-
-                    {/* tombol placeholder */}
-                    <button
-                      className="mt-4 rounded-xl px-4 py-3 text-sm font-semibold
-                                 bg-[#0F2F2E] text-white/90 cursor-not-allowed opacity-70"
-                      type="button"
-                      disabled
-                    >
-                      Menunggu Data Masuk
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="px-4 sm:px-6 pb-6">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[920px]">
-                      <thead>
-                        <tr className="bg-black/5 text-[#0F2F2E]">
-                          <th className="text-left px-4 py-3 rounded-l-xl">No</th>
-                          <th className="text-left px-4 py-3">Nama Sekolah</th>
-                          <th className="text-left px-4 py-3">NPSN</th>
-                          <th className="text-left px-4 py-3">Lokasi</th>
-                          <th className="text-left px-4 py-3">Jumlah Rincian</th>
-                          <th className="text-left px-4 py-3">Total Penggunaan</th>
-                          <th className="text-left px-4 py-3">Tanggal Submit</th>
-                          <th className="text-right px-4 py-3 rounded-r-xl">Aksi</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {filtered.map((r, idx) => {
-                          const total = r.items.reduce((a, b) => a + (b.jumlah || 0), 0);
-                          return (
-                            <tr
-                              key={r.id}
-                              className="border-b border-black/5 hover:bg-black/5 transition"
-                            >
-                              <td className="px-4 py-3">{idx + 1}</td>
-                              <td className="px-4 py-3 font-semibold text-[#0F2F2E]">
-                                {r.namaSekolah}
-                              </td>
-                              <td className="px-4 py-3">{r.npsn}</td>
-                              <td className="px-4 py-3">{r.lokasi}</td>
-                              <td className="px-4 py-3">{r.items.length}</td>
-                              <td className="px-4 py-3 font-semibold">
-                                {formatRupiah(total)}
-                              </td>
-                              <td className="px-4 py-3 text-[#4A6F6C]">
-                                {formatDateTime(r.submittedAt)}
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    router.push(`/admin/detail?id=${encodeURIComponent(r.id)}`)
-                                  }
-                                  className="rounded-xl px-3 py-2 text-xs font-semibold
-                                             bg-[#40E0D0]/15 text-[#0F2F2E]
-                                             border border-[#40E0D0]/30 hover:shadow-md transition"
-                                >
-                                  Lihat Detail
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          </main>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {/* CONTENT */}
+      <main className="p-4 sm:p-6 lg:p-8 flex-1 max-w-[1600px] mx-auto w-full">
+        <div className="rounded-[2.5rem] bg-white/60 backdrop-blur-xl border border-[#B2F5EA] shadow-xl shadow-[#40E0D0]/5 overflow-hidden flex flex-col min-h-[400px]">
+          <div className="px-8 py-6 border-b border-[#B2F5EA]/50">
+            <h2 className="text-lg font-extrabold text-[#0F2F2E]">
+              Daftar Laporan Masuk
+            </h2>
+            <p className="text-sm text-[#6B8E8B] font-medium mt-1">
+              Kelola dan tinjau laporan penggunaan dana dari sekolah-sekolah
+            </p>
+          </div>
+
+          <div className="flex-1">
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-[#E6FFFA] flex items-center justify-center text-[#40E0D0] mb-4">
+                  <InboxIcon />
+                </div>
+                <div className="text-lg font-bold text-[#0F2F2E]">
+                  Belum ada laporan
+                </div>
+                <p className="mt-2 text-sm text-[#6B8E8B] max-w-sm">
+                  Laporan penggunaan dana yang dikirim sekolah akan muncul di sini.
+                </p>
+                <button
+                  className="mt-6 rounded-xl px-6 py-3 text-sm font-bold
+                               bg-[#0F2F2E] text-white/50 cursor-not-allowed"
+                  type="button"
+                  disabled
+                >
+                  Menunggu Data Masuk
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#E6FFFA]/50 text-[#0F2F2E] text-xs uppercase tracking-wider font-bold border-b border-[#B2F5EA]">
+                      <th className="px-6 py-4 w-16 text-center">No</th>
+                      <th className="px-6 py-4">Nama Sekolah</th>
+                      <th className="px-6 py-4">NPSN</th>
+                      <th className="px-6 py-4">Lokasi</th>
+                      <th className="px-6 py-4">Rincian</th>
+                      <th className="px-6 py-4">Total</th>
+                      <th className="px-6 py-4">Tanggal</th>
+                      <th className="px-6 py-4 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-[#B2F5EA]/30 text-sm">
+                    {filtered.map((r, idx) => {
+                      const total = r.items.reduce((a, b) => a + (b.jumlah || 0), 0);
+                      return (
+                        <tr
+                          key={r.id}
+                          className="hover:bg-[#E6FFFA]/40 transition group"
+                        >
+                          <td className="px-6 py-4 text-center text-[#6B8E8B] font-medium">{idx + 1}</td>
+                          <td className="px-6 py-4 font-bold text-[#0F2F2E]">
+                            {r.namaSekolah}
+                          </td>
+                          <td className="px-6 py-4 font-mono text-[#4A6F6C]">{r.npsn}</td>
+                          <td className="px-6 py-4 text-[#4A6F6C]">{r.lokasi}</td>
+                          <td className="px-6 py-4 font-medium">{r.items.length} item</td>
+                          <td className="px-6 py-4 font-bold text-[#0F2F2E]">
+                            {formatRupiah(total)}
+                          </td>
+                          <td className="px-6 py-4 text-[#4A6F6C]">
+                            {formatDateTime(r.submittedAt)}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(`/admin/detail?id=${encodeURIComponent(r.id)}`)
+                              }
+                              className="rounded-xl px-3 py-1.5 text-xs font-bold
+                                          bg-[#E6FFFA] text-[#0F2F2E]
+                                          border border-[#B2F5EA] hover:shadow-md transition"
+                            >
+                              Detail
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
-  );
-}
-
-/* ================= SIDEBAR ITEM ================= */
-
-function SidebarItem({
-  label,
-  href,
-  active,
-  onClick,
-}: {
-  label: string;
-  href: string;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  const router = useRouter();
-
-  return (
-    <button
-      onClick={() => {
-        onClick?.();
-        router.push(href);
-      }}
-      className={
-        "w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition " +
-        (active
-          ? "bg-[#0F2F2E] text-white shadow-md"
-          : "text-[#0F2F2E] hover:bg-black/5")
-      }
-      type="button"
-    >
-      {label}
-    </button>
   );
 }
 
@@ -395,33 +246,14 @@ function formatDateTime(iso: string) {
 
 /* ================= ICONS ================= */
 
-function MenuIcon() {
+function SearchIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
   );
 }
 
-function SearchIcon() {
+function InboxIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M16.5 16.5 21 21"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>
   );
 }

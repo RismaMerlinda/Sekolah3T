@@ -5,9 +5,9 @@ const jwt = require('jsonwebtoken');
 /* ================= REGISTER ================= */
 exports.register = async (req, res) => {
   try {
-    const { full_name, email, password } = req.body;
+    const { schoolName, email, password } = req.body;
 
-    if (!full_name || !email || !password) {
+    if (!schoolName || !email || !password) {
       return res.status(400).json({
         message: 'Semua field wajib diisi',
       });
