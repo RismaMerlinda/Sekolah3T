@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/Input";
 import api from "@/lib/axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useForm, SubmitErrorHandler } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
 
@@ -29,7 +28,7 @@ const registerSchema = z
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-    const router = useRouter(); // ✅ WAJIB ADA
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -44,9 +43,7 @@ export default function RegisterPage() {
     const onSubmit = async (data: RegisterForm) => {
         setIsLoading(true);
         try {
-            console.log("DATA DIKIRIM:", data); // 🔥 DEBUG
-
-            await api.post("/api/auth/register", {
+            await api.post("/auth/register", {
                 schoolName: data.schoolName,
                 npsn: data.npsn,
                 email: data.email,
@@ -54,18 +51,26 @@ export default function RegisterPage() {
             });
 
             toast.success("Registrasi berhasil!");
-            router.replace("/login");
+            setIsSuccess(true);
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Terjadi kesalahan");
+            const errorMessage = error.response?.data?.message || "Terjadi kesalahan";
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const onError: SubmitErrorHandler<RegisterForm> = (errors) => {
+        toast.error("Mohon lengkapi semua data yang wajib diisi!");
+        console.log("Form Errors:", errors);
+    };
 
     useEffect(() => {
         if (isSuccess) {
-            router.replace("/login");
+            const timer = setTimeout(() => {
+                router.replace("/login");
+            }, 1500);
+            return () => clearTimeout(timer);
         }
     }, [isSuccess, router]);
 
@@ -73,8 +78,12 @@ export default function RegisterPage() {
     // ================= SUCCESS PAGE =================
     if (isSuccess) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <p>Registrasi berhasil, mengalihkan ke login…</p>
+            <div className="min-h-screen flex items-center justify-center bg-secondary-bg">
+                <Card className="p-8 text-center shadow-xl">
+                    <h2 className="text-2xl font-bold text-green-600 mb-4">✅ Registrasi Berhasil!</h2>
+                    <p>Akun sekolah Anda telah dibuat.</p>
+                    <p className="text-sm text-gray-500 mt-2">Mengalihkan ke halaman login...</p>
+                </Card>
             </div>
         );
     }
@@ -93,7 +102,7 @@ export default function RegisterPage() {
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-4">
                     <Input
                         label="Nama Sekolah"
                         {...register("schoolName")}

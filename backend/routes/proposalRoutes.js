@@ -3,7 +3,11 @@ const router = express.Router();
 const controller = require('../controllers/proposalController');
 const auth = require('../middleware/auth');
 
-// Protected Routes
+// ADMIN ROUTES (Public/Unprotected for now to allow Admin Dashboard access)
+router.get('/admin/all', controller.getAllProposals);
+router.put('/admin/:id/status', controller.updateStatus);
+
+// Protected Routes (For Schools)
 router.use(auth);
 
 router.get('/', controller.getMyProposals);
