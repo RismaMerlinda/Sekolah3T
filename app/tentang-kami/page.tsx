@@ -21,9 +21,9 @@ export default function TentangKamiPage() {
             <Navbar />
 
             {/* Header */}
-            <section className="pt-32 pb-16 bg-gradient-to-b from-secondary-bg to-white text-center">
+            <section className="pt-24 pb-12 bg-gradient-to-b from-secondary-bg to-white text-center">
                 <div className="container mx-auto px-6">
-                    <h1 className="text-4xl md:text-5xl font-bold text-neutral-heading mb-6">
+                    <h1 className="text-4xl md:text-5xl font-bold text-neutral-heading mb-4">
                         Mengenal Sahabat<span className="text-primary">3T</span>
                     </h1>
                     <p className="text-xl text-neutral-body max-w-2xl mx-auto leading-relaxed">
@@ -33,9 +33,9 @@ export default function TentangKamiPage() {
             </section>
 
             {/* Story Section */}
-            <section className="py-16">
+            <section className="py-12">
                 <div className="container mx-auto px-6">
-                    <div className="flex flex-col md:flex-row items-center gap-16">
+                    <div className="flex flex-col md:flex-row items-center gap-12">
                         <div className="flex-1">
                             <div className="relative rounded-3xl overflow-hidden shadow-2xl rotate-3 hover:rotate-0 transition-all duration-500">
                                 <div className="bg-gray-200 h-[400px] w-full flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1000&auto=format&fit=crop")' }}>

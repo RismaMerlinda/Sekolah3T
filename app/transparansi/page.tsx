@@ -44,18 +44,18 @@ export default function TransparansiPage() {
             <Navbar />
 
             {/* Hero Section */}
-            <section className="pt-32 pb-48 bg-[#0F2F2E] text-white text-center relative overflow-hidden">
+            <section className="pt-24 pb-32 bg-[#0F2F2E] text-white text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                 <div className="container mx-auto px-6 relative z-10">
-                    <div className="inline-block p-3 bg-white/10 rounded-full mb-4 px-6 border border-white/20 backdrop-blur-md">
+                    <div className="inline-block p-2 bg-white/10 rounded-full mb-4 px-6 border border-white/20 backdrop-blur-md">
                         <span className="flex items-center gap-2 text-sm font-semibold tracking-wider uppercase text-[#40E0D0]">
                             <ShieldCheck className="w-4 h-4" /> Laporan Terbuka
                         </span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-bold mb-6">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4">
                         Transparansi <span className="text-[#40E0D0]">Tanpa Batas</span>
                     </h1>
-                    <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed mb-12">
+                    <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed mb-8">
                         Setiap rupiah yang Anda donasikan tercatat, dapat dilacak, dan dipertanggungjawabkan. Kami percaya kepercayaan adalah mata uang termahal.
                     </p>
                 </div>
