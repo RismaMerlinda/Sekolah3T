@@ -1,15 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CampaignCard } from '@/components/donor/CampaignCard';
-import { TrustSection } from '@/components/donor/TrustSection';
-
-import { getDonorCampaigns, getPlatformTransparencyStats } from '@/lib/donor-api';
+import { getDonorCampaigns } from '@/lib/donor-api';
 
 interface Campaign {
   id: string;
-  _id?: string; // MongoDB ID
+  _id?: string;
   title: string;
   description: string;
   schoolName: string;
@@ -20,196 +17,229 @@ interface Campaign {
   verified: boolean;
   verificationDate?: string;
   donorsCount?: number;
+  category?: string;
+  status?: 'active' | 'completed' | 'closed';
 }
 
-export default function DonorHomePage() {
-  const [featuredCampaigns, setFeaturedCampaigns] = useState<Campaign[]>([]);
-  const [stats, setStats] = useState({
-    totalFundsRaised: 0,
-    totalDonors: 0,
-    activeCampaigns: 0,
-    supportedSchools: 0,
-  });
+type SortBy = 'newest' | 'highest-funded' | 'most-donors' | 'ending-soon';
+type FilterCategory = 'all' | 'infrastruktur' | 'beasiswa' | 'teknologi' | 'kesehatan';
+
+export default function CampaignsListPage() {
+  const [sortBy, setSortBy] = useState<SortBy>('newest');
+  const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCampaigns = async () => {
       try {
-        const [campaignsData, statsData] = await Promise.all([
-          getDonorCampaigns(),
-          getPlatformTransparencyStats()
-        ]);
-
-        // Fix ID mapping for MongoDB
-        const mappedCampaigns = campaignsData.map((c: any) => ({
+        const data = await getDonorCampaigns();
+        const mapped = data.map((c: any) => ({
           ...c,
           id: c._id || c.id
         }));
-
-        setFeaturedCampaigns(mappedCampaigns.slice(0, 4));
-
-        if (statsData) {
-          setStats({
-            totalFundsRaised: statsData.totalDonationAmount || 0,
-            totalDonors: statsData.totalDonors || 0,
-            activeCampaigns: statsData.activeCampaigns || 0,
-            supportedSchools: statsData.verifiedSchools || 0,
-          });
-        }
+        setAllCampaigns(mapped);
       } catch (error) {
-        console.error('Error fetching data from backend:', error);
+        console.error('Error fetching campaigns:', error);
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchData();
+    fetchCampaigns();
   }, []);
 
-  const formatCurrency = (value: number) => {
-    if (value >= 1000000000) {
-      return (value / 1000000000).toFixed(1) + 'M';
-    } else if (value >= 1000000) {
-      return (value / 1000000).toFixed(1) + 'Jt';
+  // Filter and sort campaigns
+  const filteredAndSortedCampaigns = useMemo(() => {
+    let filtered = allCampaigns;
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.title.toLowerCase().includes(query) ||
+          c.schoolName.toLowerCase().includes(query) ||
+          c.location.toLowerCase().includes(query)
+      );
     }
-    return value.toString();
-  };
+
+    // Category filter
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter((c) => c.category === filterCategory);
+    }
+
+    // Sort
+    const sorted = [...filtered];
+    switch (sortBy) {
+      case 'highest-funded':
+        sorted.sort((a, b) => b.collectedAmount - a.collectedAmount);
+        break;
+      case 'most-donors':
+        sorted.sort((a, b) => (b.donorsCount || 0) - (a.donorsCount || 0));
+        break;
+      case 'ending-soon':
+        sorted.reverse();
+        break;
+      case 'newest':
+      default:
+        break;
+    }
+
+    return sorted;
+  }, [searchQuery, filterCategory, sortBy]);
+
+  const categories: { value: FilterCategory; label: string }[] = [
+    { value: 'all', label: 'Semua Kategori' },
+    { value: 'infrastruktur', label: 'Infrastruktur' },
+    { value: 'beasiswa', label: 'Beasiswa' },
+    { value: 'teknologi', label: 'Teknologi' },
+    { value: 'kesehatan', label: 'Kesehatan' },
+  ];
 
   return (
-    <div className="bg-white">
-      {/* HERO SECTION */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#E6FFFA] via-white to-[#CCFBF1]"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#40E0D0] opacity-10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#2CB1A6] opacity-10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-gradient-to-b from-white to-[#E6FFFA]">
+      {/* Header Section */}
+      <section className="bg-gradient-to-r from-[#40E0D0] to-[#2CB1A6] text-white py-12">
+        <div className="max-w-6xl mx-auto px-4">
+          <h1 className="text-4xl font-bold mb-4">Semua Kampanye</h1>
+          <p className="text-lg opacity-90">
+            Temukan kampanye yang ingin Anda dukung dan buat perbedaan nyata.
+          </p>
+        </div>
+      </section>
 
-        <div className="max-w-6xl mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div>
-              <div className="inline-block mb-4 px-4 py-2 bg-[#E6FFFA] border border-[#40E0D0] rounded-full">
-                <span className="text-sm font-semibold text-[#2CB1A6]">
-                  🌟 Mengubah Pendidikan di Daerah 3T
-                </span>
-              </div>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar Filters */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg border-2 border-[#B2F5EA] p-6 sticky top-24">
+              <h3 className="text-lg font-bold text-[#0F2F2E] mb-4">Filter</h3>
 
-              <h1 className="text-4xl lg:text-5xl font-bold text-[#0F2F2E] mb-6 leading-tight">
-                Setiap Donasi Adalah Investasi untuk{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#40E0D0] to-[#2CB1A6]">
-                  Masa Depan Cerah
-                </span>
-              </h1>
-
-              <p className="text-lg text-[#4A6F6C] mb-8 leading-relaxed">
-                Bergabunglah dengan ribuan pendonor yang telah mengubah kehidupan ribuan
-                siswa di daerah terpencil, tertinggal, dan terdepan. Bersama kita wujudkan
-                pendidikan berkualitas untuk semua.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/donor/campaigns"
-                  className="px-8 py-3 bg-gradient-to-r from-[#40E0D0] to-[#2CB1A6] text-white font-bold rounded-lg hover:shadow-lg transition-all duration-300 text-center"
-                >
-                  Jelajahi Kampanye
-                </Link>
-                <Link
-                  href="/tentang-kami"
-                  className="px-8 py-3 border-2 border-[#40E0D0] text-[#40E0D0] font-bold rounded-lg hover:bg-[#E6FFFA] transition-all duration-300 text-center"
-                >
-                  Tentang Kami
-                </Link>
-              </div>
-            </div>
-
-            {/* Right Visual */}
-            <div className="relative h-80 lg:h-96">
-              <div className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src="/donor_hero_education_1768991479531.png"
-                  alt="Siswa di daerah 3T belajar dengan semangat"
-                  className="w-full h-full object-cover"
+              {/* Search */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-[#0F2F2E] mb-2">
+                  Cari Kampanye
+                </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Nama, sekolah, lokasi..."
+                  className="w-full px-3 py-2 border border-[#B2F5EA] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#40E0D0] text-sm"
                 />
               </div>
+
+              {/* Category Filter */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-[#0F2F2E] mb-2">
+                  Kategori
+                </label>
+                <div className="space-y-2">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.value}
+                      onClick={() => setFilterCategory(cat.value)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all ${filterCategory === cat.value
+                        ? 'bg-[#40E0D0] text-white'
+                        : 'bg-[#E6FFFA] text-[#0F2F2E] hover:bg-[#CCFBF1]'
+                        }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort */}
+              <div>
+                <label className="block text-sm font-semibold text-[#0F2F2E] mb-2">
+                  Urutkan
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortBy)}
+                  className="w-full px-3 py-2 border border-[#B2F5EA] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#40E0D0] text-sm bg-white"
+                >
+                  <option value="newest">Terbaru</option>
+                  <option value="highest-funded">Dana Terbanyak</option>
+                  <option value="most-donors">Pendonor Terbanyak</option>
+                  <option value="ending-soon">Berakhir Segera</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* STATS SECTION */}
-      <section className="bg-[#0F2F2E] text-white py-12">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-3xl lg:text-4xl font-bold text-[#40E0D0] mb-2">
-                {formatCurrency(stats.totalFundsRaised)}
+          {/* Main Content Area */}
+          <div className="lg:col-span-3">
+            {/* Category Info Banner */}
+            {filterCategory !== 'all' && (
+              <div className="bg-white rounded-lg border-2 border-[#B2F5EA] p-6 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#40E0D0] to-[#2CB1A6] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-2xl font-bold">
+                      {filterCategory === 'infrastruktur' && '🏗️'}
+                      {filterCategory === 'beasiswa' && '🎓'}
+                      {filterCategory === 'teknologi' && '💻'}
+                      {filterCategory === 'kesehatan' && '🏥'}
+                    </span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-[#0F2F2E] mb-2">
+                      {filterCategory === 'infrastruktur' && 'Infrastruktur Pendidikan'}
+                      {filterCategory === 'beasiswa' && 'Program Beasiswa'}
+                      {filterCategory === 'teknologi' && 'Teknologi Pendidikan'}
+                      {filterCategory === 'kesehatan' && 'Kesehatan Sekolah'}
+                    </h2>
+                    <p className="text-[#4A6F6C] leading-relaxed">
+                      {filterCategory === 'infrastruktur' &&
+                        'Kampanye untuk membangun dan memperbaiki fasilitas fisik sekolah seperti ruang kelas, perpustakaan, laboratorium, dan infrastruktur pendukung lainnya di daerah 3T.'}
+                      {filterCategory === 'beasiswa' &&
+                        'Program bantuan pendidikan untuk siswa berprestasi dari keluarga kurang mampu, termasuk beasiswa penuh, bantuan seragam, buku pelajaran, dan kebutuhan sekolah lainnya.'}
+                      {filterCategory === 'teknologi' &&
+                        'Kampanye untuk menyediakan perangkat teknologi modern seperti komputer, internet, platform e-learning, dan pelatihan digital untuk meningkatkan kualitas pembelajaran.'}
+                      {filterCategory === 'kesehatan' &&
+                        'Program kesehatan sekolah termasuk pembangunan klinik, pemeriksaan kesehatan berkala, penyediaan obat-obatan, dan edukasi kesehatan untuk siswa di daerah terpencil.'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-gray-400">Dana Terkumpul</p>
+            )}
+
+            {/* Results Summary */}
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-[#4A6F6C]">
+                Menampilkan <span className="font-bold text-[#0F2F2E]">{filteredAndSortedCampaigns.length}</span> kampanye
+                {filterCategory !== 'all' && (
+                  <span className="ml-1">
+                    untuk kategori <span className="font-bold text-[#40E0D0]">
+                      {categories.find(c => c.value === filterCategory)?.label}
+                    </span>
+                  </span>
+                )}
+              </p>
             </div>
-            <div className="text-center">
-              <div className="text-3xl lg:text-4xl font-bold text-[#40E0D0] mb-2">
-                {stats.totalDonors.toLocaleString('id-ID')}
+
+            {/* Campaigns Grid */}
+            {filteredAndSortedCampaigns.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredAndSortedCampaigns.map((campaign) => (
+                  <CampaignCard key={campaign.id} campaign={campaign} />
+                ))}
               </div>
-              <p className="text-gray-400">Pendonor Aktif</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl lg:text-4xl font-bold text-[#40E0D0] mb-2">
-                {stats.activeCampaigns}
+            ) : (
+              <div className="bg-white rounded-lg border-2 border-[#B2F5EA] p-12 text-center">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-bold text-[#0F2F2E] mb-2">Tidak Ada Kampanye</h3>
+                <p className="text-[#4A6F6C]">
+                  Tidak ditemukan kampanye yang sesuai dengan filter Anda.
+                </p>
               </div>
-              <p className="text-gray-400">Kampanye Aktif</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl lg:text-4xl font-bold text-[#40E0D0] mb-2">
-                {stats.supportedSchools}
-              </div>
-              <p className="text-gray-400">Sekolah Terbantu</p>
-            </div>
+            )}
           </div>
         </div>
-      </section>
-
-      {/* TRUST SECTION */}
-      <TrustSection />
-
-      {/* FEATURED CAMPAIGNS */}
-      <section className="py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12">
-            <div>
-              <h2 className="text-3xl font-bold text-[#0F2F2E] mb-2">Kampanye Unggulan</h2>
-              <p className="text-[#4A6F6C]">Kampanye terpopuler yang membutuhkan dukungan Anda</p>
-            </div>
-            <Link
-              href="/donor/campaigns"
-              className="mt-4 sm:mt-0 px-6 py-2 text-[#40E0D0] font-semibold hover:text-[#2CB1A6] transition-colors"
-            >
-              Lihat Semua →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredCampaigns.map((campaign) => (
-              <CampaignCard key={campaign.id} campaign={campaign} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA SECTION */}
-      <section className="py-16 bg-gradient-to-r from-[#40E0D0] to-[#2CB1A6]">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-            Siap Membuat Perbedaan?
-          </h2>
-          <p className="text-lg text-white opacity-90 mb-8">
-            Bergabunglah dengan gerakan perubahan pendidikan di Indonesia. Setiap donasi,
-            sekecil apapun, membuat dampak besar bagi siswa di daerah 3T.
-          </p>
-          <Link
-            href="/donor/campaigns"
-            className="inline-block px-8 py-4 bg-white text-[#2CB1A6] font-bold rounded-lg hover:shadow-lg transition-all duration-300"
-          >
-            Mulai Berdonasi Sekarang
-          </Link>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }
