@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-<<<<<<< HEAD
 import Link from 'next/link';
-=======
->>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 import { usePathname, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
-import Sidebar from '@/app/components/Sidebar';
+import Sidebar from '@/components/Sidebar';
 import Header from '@/app/components/Header';
+import toast from 'react-hot-toast';
+import { showConfirm } from '@/lib/swal';
 import {
   UploadCloud,
   CheckCircle,
@@ -21,7 +20,9 @@ import {
   Calendar,
   Lock,
   Eye,
-  Pencil
+  Pencil,
+  X,
+  Loader2
 } from 'lucide-react';
 
 /* ================= PAGE CONTENT ================= */
@@ -38,10 +39,22 @@ export default function TimelinePage() {
   // Logic
   const [loading, setLoading] = useState(true);
   const [hasApprovedProposal, setHasApprovedProposal] = useState(false);
-  const [files, setFiles] = useState<any[]>([]);
-  const addInputRef = useRef<HTMLInputElement>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [proposalId, setProposalId] = useState<string | null>(null);
+  const [timelines, setTimelines] = useState<any[]>([]);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0]
+  });
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -54,7 +67,6 @@ export default function TimelinePage() {
       const parsed = JSON.parse(stored);
       setUser(parsed);
 
-<<<<<<< HEAD
       if (parsed.npsn) {
         fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
           .then(res => res.json())
@@ -71,26 +83,8 @@ export default function TimelinePage() {
         setVerified(false);
       }
 
-      // Check Proposals
-      api.get('/proposals')
-        .then(res => {
-          const approved = res.data.some((p: any) => p.status === 'approved');
-          setHasApprovedProposal(approved);
-=======
-    if (parsed.npsn) {
-      fetch(`/api/verifikasi-sekolah?npsn=${parsed.npsn}`)
-        .then(res => res.json())
-        .then(json => {
-          if (json?.data?.satuanPendidikan) {
-            setVerified(true);
-            setOfficialSchool(json.data.satuanPendidikan);
-          } else {
-            setVerified(false);
-          }
->>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
-        })
-        .catch(err => console.error(err))
-        .finally(() => setLoading(false));
+      // Check Proposals and Fetch Timelines
+      checkProposalAndFetchTimelines();
 
     } catch (e) {
       console.error("Failed to parse user", e);
@@ -98,70 +92,117 @@ export default function TimelinePage() {
     }
   }, []);
 
-  const formatDate = (date: Date) => {
+  const checkProposalAndFetchTimelines = async () => {
+    try {
+      const res = await api.get('/proposals');
+      // Find approved proposal
+      const approved = res.data.find((p: any) => p.status === 'approved');
+
+      if (approved) {
+        setHasApprovedProposal(true);
+        setProposalId(approved._id);
+        fetchTimelines(approved._id);
+      } else {
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
+  const fetchTimelines = async (propId: string) => {
+    try {
+      const res = await api.get(`/timeline?proposalId=${propId}`);
+      setTimelines(res.data);
+    } catch (error) {
+      console.error("Failed to fetch timeline", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+
+      // Filter images only
+      const validFiles = files.filter(f => f.type.startsWith('image/'));
+      if (validFiles.length !== files.length) {
+        toast.error('Hanya file gambar yang diperbolehkan');
+      }
+
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+
+      // Generate previews
+      const newPreviews = validFiles.map(f => URL.createObjectURL(f));
+      setPreviewUrls(prev => [...prev, ...newPreviews]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proposalId) return;
+
+    setUploadLoading(true);
+    const data = new FormData();
+    data.append('title', formData.title);
+    data.append('description', formData.description);
+    data.append('date', formData.date);
+    data.append('proposalId', proposalId);
+
+    selectedFiles.forEach(file => {
+      data.append('images', file);
+    });
+
+    try {
+      await api.post('/timeline', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Kegiatan berhasil ditambahkan!');
+      setIsModalOpen(false);
+      // Reset form
+      setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0] });
+      setSelectedFiles([]);
+      setPreviewUrls([]);
+
+      fetchTimelines(proposalId);
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast.error('Gagal menambahkan kegiatan');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const isConfirmed = await showConfirm({
+      title: 'Hapus Kegiatan?',
+      text: 'Hapus kegiatan ini?',
+      icon: 'warning',
+      confirmButtonText: 'Ya, Hapus',
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#1E8F86',
+    });
+    if (!isConfirmed) return;
+    try {
+      await api.delete(`/timeline/${id}`);
+      toast.success('Kegiatan dihapus');
+      if (proposalId) fetchTimelines(proposalId);
+    } catch (error) {
+      toast.error('Gagal menghapus');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('id-ID', {
       day: 'numeric', month: 'long', year: 'numeric'
-    }).format(date);
-  };
-
-  const todayStr = formatDate(new Date());
-
-  /* --- FILE LOGIC --- */
-  const handleAddFile = (e: any) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files).map((file: any) => ({
-        fileObj: file,
-        name: file.name,
-        type: file.type,
-        size: (file.size / 1024).toFixed(0) + ' KB',
-        date: formatDate(new Date())
-      }));
-      setFiles(prev => [...prev, ...newFiles]);
-    }
-  };
-
-  const handleEditFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && editIndex !== null) {
-      const file = e.target.files[0];
-      const updatedFile = {
-        fileObj: file,
-        name: file.name,
-        type: file.type,
-        size: (file.size / 1024).toFixed(0) + ' KB',
-        date: formatDate(new Date())
-      };
-
-      setFiles(prev => {
-        const newArr = [...prev];
-        newArr[editIndex] = updatedFile;
-        return newArr;
-      });
-      setEditIndex(null);
-    }
-  };
-
-  const handleReadFile = (fileObj: File) => {
-    if (!fileObj) return;
-    const url = URL.createObjectURL(fileObj);
-    window.open(url, '_blank');
-  };
-
-  const handleDeleteFile = (index: number) => {
-    if (confirm('Hapus dokumen ini?')) {
-      setFiles(prev => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const triggerAdd = () => addInputRef.current?.click();
-<<<<<<< HEAD
-
-=======
->>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
-  const triggerEdit = (index: number) => {
-    setEditIndex(index);
-    setTimeout(() => {
-      editInputRef.current?.click();
-    }, 0);
+    }).format(new Date(dateString));
   };
 
   if (!user) return null;
@@ -196,6 +237,7 @@ export default function TimelinePage() {
 
             {hasApprovedProposal ? (
               <button
+                onClick={() => setIsModalOpen(true)}
                 className="bg-[#40E0D0] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#2CB1A6] transition shadow-lg shadow-[#40E0D0]/20 text-sm flex items-center gap-2"
               >
                 <Plus size={18} /> Tambah Kegiatan
@@ -207,96 +249,59 @@ export default function TimelinePage() {
             )}
           </div>
 
-          {/* TIMELINE */}
-          <div className="relative pl-8 border-l-2 border-[#B2F5EA] space-y-12 ml-4">
-            {/* ITEM 1: Upload Documents */}
-            {hasApprovedProposal ? (
-              <TimelineItem
-                date={todayStr}
-                title="Dokumentasi Pelaksanaan"
-                description="Upload foto dan dokumen terkait pelaksanaan kegiatan hari ini."
-                icon={<UploadCloud size={18} className="text-white" />}
-                active
-              >
-                <div className="mt-4 bg-[#F8FAFC] rounded-2xl p-6 border border-dashed border-[#B2F5EA]">
-                  <div className="flex justify-center mb-6">
-                    {/* Hidden Input for Adding */}
-                    <input
-                      type="file"
-                      multiple
-                      hidden
-                      ref={addInputRef}
-                      onChange={handleAddFile}
-                      accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                    />
+          {/* TIMELINE LIST */}
+          <div className="relative pl-8 border-l-2 border-[#B2F5EA] space-y-12 ml-4 pb-12">
 
-                    {/* Hidden Input for Editing */}
-                    <input
-                      type="file"
-                      hidden
-                      ref={editInputRef}
-                      onChange={handleEditFile}
-                      accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                    />
-
-                    <button
-                      onClick={triggerAdd}
-                      className="flex items-center gap-2 bg-[#CCFBF1] text-[#1E8F86] px-6 py-3 rounded-xl hover:bg-[#bbf0e5] transition font-semibold text-sm"
-                    >
-                      <UploadCloud size={20} />
-                      Upload Dokumen
-                    </button>
-<<<<<<< HEAD
-=======
-                    <input type="file" multiple hidden ref={addInputRef} onChange={handleAddFile} accept=".jpg,.jpeg,.png,.pdf" />
-                    <input type="file" hidden ref={editInputRef} onChange={handleEditFile} accept=".jpg,.jpeg,.png,.pdf" />
->>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
-                  </div>
-
-                  {files.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {files.map((file, idx) => (
-                        <div key={idx} className="bg-white p-3 rounded-xl border border-[#E2E8F0] flex flex-col gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[#F1F5F9] rounded-lg text-[#64748B]">
-                              {file.type.includes('image') ? <ImageIcon size={18} /> : <FileIcon size={18} />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-[#0F2F2E] truncate">{file.name}</p>
-                              <p className="text-[10px] text-[#6B8E8B]">{file.date} &bull; {file.size}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#F1F5F9]">
-                            <button onClick={() => handleReadFile(file.fileObj)} className="text-[#1E8F86] hover:bg-[#E6FFFA] p-1.5 rounded-lg transition">
-                              <Eye size={16} />
-                            </button>
-                            <button onClick={() => triggerEdit(idx)} className="text-[#2CB1A6] hover:bg-[#CCFBF1] p-1.5 rounded-lg transition">
-                              <Pencil size={16} />
-                            </button>
-                            <button onClick={() => handleDeleteFile(idx)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-<<<<<<< HEAD
-=======
-                          <div className="flex gap-1">
-                            <button onClick={() => triggerEdit(idx)} className="text-[#1E8F86] hover:bg-[#E6FFFA] p-1.5 rounded-lg transition">
-                              <Pencil size={14} />
-                            </button>
-                            <button onClick={() => handleDeleteFile(idx)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
->>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
+            {loading ? (
+              <div className="pl-4 text-[#6B8E8B] flex items-center gap-2">
+                <Loader2 className="animate-spin" size={20} /> Memuat timeline...
+              </div>
+            ) : timelines.length > 0 ? (
+              timelines.map((item) => (
+                <TimelineItem
+                  key={item._id}
+                  date={formatDate(item.date)}
+                  title={item.title}
+                  description={item.description}
+                  icon={<CheckCircle size={18} className="text-white" />}
+                  active={true}
+                >
+                  {/* Display Images */}
+                  {item.images && item.images.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {item.images.map((img: string, idx: number) => (
+                        <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-[#E2E8F0] relative group">
+                          <img src={img} alt="Bukti" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition cursor-pointer" onClick={() => window.open(img, '_blank')} />
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
-              </TimelineItem>
-            ) : (
+
+                  <div className="mt-4 pt-4 border-t border-[#F1F5F9] flex justify-end">
+                    <button
+                      onClick={() => handleDelete(item._id)}
+                      className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1"
+                    >
+                      <Trash2 size={12} /> Hapus
+                    </button>
+                  </div>
+                </TimelineItem>
+              ))
+            ) : hasApprovedProposal ? (
+              // Empty state if approved but no activities
               <TimelineItem
-                date={todayStr}
+                date={formatDate(new Date().toISOString())}
+                title="Belum Ada Kegiatan"
+                description="Tambahkan kegiatan pertama Anda dengan klik tombol di atas."
+                icon={<Clock size={18} className="text-white" />}
+                color="bg-gray-300"
+                active={false}
+              />
+            ) : (
+              // Not approved yet
+              <TimelineItem
+                date={formatDate(new Date().toISOString())}
                 title="Kegiatan Belum Dimulai"
                 description="Anda dapat mengupload dokumentasi kegiatan setelah proposal Anda disetujui (ACC)."
                 icon={<Lock size={18} className="text-white" />}
@@ -305,9 +310,10 @@ export default function TimelinePage() {
               />
             )}
 
+            {/* System Milestones */}
             {hasApprovedProposal && (
               <TimelineItem
-                date={formatDate(new Date(Date.now() - 86400000))}
+                date="Milestone System"
                 title="Pengajuan Disetujui"
                 description="Proposal Anda telah disetujui oleh Admin."
                 icon={<CheckCircle size={18} className="text-white" />}
@@ -316,7 +322,7 @@ export default function TimelinePage() {
             )}
 
             <TimelineItem
-              date={formatDate(new Date(Date.now() - 172800000))}
+              date="Milestone System"
               title="Akun Terdaftar"
               description="Selamat datang di Sahabat3T!"
               icon={<User size={18} className="text-white" />}
@@ -327,15 +333,119 @@ export default function TimelinePage() {
           </div>
         </main>
       </div>
+
+      {/* MODAL TAMBAH KEGIATAN */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-[#0F2F2E]">Tambah Kegiatan Baru</h3>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-[#0F2F2E] mb-1">Nama Kegiatan</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#40E0D0]"
+                    placeholder="Contoh: Pembelian Semen"
+                    value={formData.title}
+                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0F2F2E] mb-1">Tanggal</label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#40E0D0]"
+                    value={formData.date}
+                    onChange={e => setFormData({ ...formData, date: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0F2F2E] mb-1">Keterangan / Deskripsi</label>
+                  <textarea
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#40E0D0] min-h-[100px]"
+                    placeholder="Jelaskan detail kegiatan..."
+                    value={formData.description}
+                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0F2F2E] mb-2">Bukti Dokumentasi (Foto)</label>
+                  <div
+                    className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      type="file"
+                      hidden
+                      multiple
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                    />
+                    <UploadCloud className="text-[#40E0D0] mb-2" size={32} />
+                    <p className="text-sm font-semibold text-gray-600">Klik untuk upload foto</p>
+                    <p className="text-xs text-gray-400">Bisa upload lebih dari satu</p>
+                  </div>
+
+                  {/* Previews */}
+                  {previewUrls.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2 mt-4">
+                      {previewUrls.map((url, idx) => (
+                        <div key={idx} className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 group">
+                          <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeFile(idx)}
+                            className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50"
+                    disabled={uploadLoading}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-3 bg-[#1E8F86] text-white rounded-xl font-bold hover:bg-[#166E68] flex items-center justify-center gap-2"
+                    disabled={uploadLoading}
+                  >
+                    {uploadLoading ? <Loader2 className="animate-spin" /> : 'Simpan Kegiatan'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-<<<<<<< HEAD
-=======
 /* ================= HELPERS ================= */
-
->>>>>>> 867073c80623d0846536643ea41bc6c560e1e392
 function TimelineItem({ date, title, description, children, icon, color = "bg-[#40E0D0]", active, last }: any) {
   return (
     <div className="relative">

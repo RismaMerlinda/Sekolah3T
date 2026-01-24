@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 import toast from 'react-hot-toast';
 import api from '@/lib/axios'; // Axios instance with token
+import { showConfirm } from '@/lib/swal';
 import { useForm } from 'react-hook-form';
-import Sidebar from '@/app/components/Sidebar';
+import Sidebar from '@/components/Sidebar';
 import Header from '@/app/components/Header';
 import {
     ClipboardList,
@@ -53,7 +54,15 @@ function DraftList({ onEdit, onNew }: any) {
     }, []);
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Yakin ingin menghapus draft ini?")) return;
+        const isConfirmed = await showConfirm({
+            title: 'Hapus Draft?',
+            text: 'Yakin ingin menghapus draft ini?',
+            icon: 'warning',
+            confirmButtonText: 'Ya, Hapus',
+            confirmButtonColor: '#EF4444',
+            cancelButtonColor: '#1E8F86',
+        });
+        if (!isConfirmed) return;
         try {
             await api.delete(`/proposals/${id}`);
             toast.success("Draft dihapus");
@@ -167,13 +176,31 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
     // Check if Read Only (Not draft)
     const isReadOnly = initialData && initialData.status !== 'draft';
 
-    // Format numeric targetAmount to dotted string on load
+    // Format data on load (Target amount & Dates)
     useEffect(() => {
         if (initialData?.targetAmount) {
             const formatted = new Intl.NumberFormat("id-ID").format(initialData.targetAmount);
             setValue("targetAmount", formatted);
         }
+        if (initialData?.startDate) {
+            setValue("startDate", new Date(initialData.startDate).toISOString().split('T')[0]);
+        }
+        if (initialData?.endDate) {
+            setValue("endDate", new Date(initialData.endDate).toISOString().split('T')[0]);
+        }
     }, [initialData, setValue]);
+
+    const start = watch('startDate');
+    const end = watch('endDate');
+
+    const durationDays = useMemo(() => {
+        if (!start || !end) return 0;
+        const s = new Date(start);
+        const e = new Date(end);
+        const diff = e.getTime() - s.getTime();
+        const days = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+        return days > 0 ? days : 0;
+    }, [start, end]);
 
     const onSubmit = async (data: any) => {
         setIsSaving(true);
@@ -198,7 +225,13 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
 
             // 2. SUBMIT ACTION
             if (submitAction === 'submit' && !isReadOnly) {
-                if (confirm("Apakah Anda yakin ingin MENGIRIM pengajuan ini?\n\nSetelah dikirim, data tidak dapat diubah lagi.")) {
+                const isConfirmed = await showConfirm({
+                    title: 'Kirim Pengajuan?',
+                    text: 'Apakah Anda yakin ingin MENGIRIM pengajuan ini?\n\nSetelah dikirim, data tidak dapat diubah lagi.',
+                    icon: 'question'
+                });
+
+                if (isConfirmed) {
                     await api.post(`/proposals/${proposalId}/submit`);
                     toast.success("Pengajuan BERHASIL DIKIRIM!");
                 } else {
@@ -243,7 +276,27 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
                 <Section title="1. Informasi Umum">
                     <TwoCol>
                         <AutoField label="Nama Kampanye" name="title" register={register} placeholder="Contoh: Renovasi Perpustakaan" />
-                        <AutoField label="Kategori Kebutuhan" name="category" register={register} placeholder="Contoh: Infrastruktur" />
+
+                        <div>
+                            <label className="text-sm font-semibold text-[#0F2F2E] mb-2 block">Kategori Kebutuhan</label>
+                            <select
+                                {...register('category')}
+                                disabled={isReadOnly}
+                                className={`w-full px-4 py-3 h-[50px] rounded-xl outline-none transition text-sm font-medium appearance-none
+                                ${isReadOnly
+                                        ? 'bg-[#F1F5F9] text-[#64748B] border border-transparent cursor-not-allowed'
+                                        : 'bg-[#F8FAFC] text-[#0F2F2E] border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1]'
+                                    }`}
+                            >
+                                <option value="">Pilih Kategori...</option>
+                                <option value="infrastruktur">Infrastruktur</option>
+                                <option value="beasiswa">Beasiswa</option>
+                                <option value="teknologi">Teknologi</option>
+                                <option value="kesehatan">Kesehatan</option>
+                                <option value="lainnya">Lainnya</option>
+                            </select>
+                        </div>
+
                         <AutoField label="Wilayah Sekolah" name="region" register={register} placeholder="Contoh: Kab. Belu, NTT" />
                         <AutoField label="Ringkasan Kampanye" name="description" register={register} placeholder="Deskripsi singkat..." />
                     </TwoCol>
@@ -251,8 +304,8 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
 
                 <Section title="2. Informasi Sekolah">
                     <TwoCol>
-                        <AutoField label="Nama Sekolah" name="schoolName" register={register} disabled />
-                        <AutoField label="NPSN" name="npsn" register={register} disabled />
+                        <AutoField label="Nama Sekolah" name="schoolName" register={register} readOnly />
+                        <AutoField label="NPSN" name="npsn" register={register} readOnly />
                         <AutoField label="Kontak Penanggung Jawab" name="contactPhone" register={register} placeholder="08..." />
                         <AutoField label="Nama Penanggung Jawab" name="principalName" register={register} placeholder="Nama Kepala Sekolah" />
                         <AutoField label="Alamat Sekolah" name="schoolAddress" register={register} placeholder="Jln..." />
@@ -285,18 +338,25 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
                         </div>
                         <DateField label="Tanggal Mulai" name="startDate" register={register} />
                         <UploadBox label="Rincian Penggunaan Dana" name="files.budgetPlan" setValue={isReadOnly ? null : setValue} watch={watch} />
-                        <DateField label="Tanggal Selesai" name="endDate" register={register} />
+                        <div>
+                            <DateField label="Tanggal Selesai" name="endDate" register={register} min={start} />
+                            {durationDays > 0 && (
+                                <div className="mt-1 text-[10px] text-[#1E8F86] font-bold bg-[#E6FFFA] py-1 px-2 rounded-lg inline-block">
+                                    🗓️ Total Durasi: {durationDays} Hari
+                                </div>
+                            )}
+                        </div>
                     </TwoCol>
                 </Section>
             </fieldset>
 
             {!isReadOnly && (
-                <div className="flex justify-end gap-3 pt-4 pb-8">
+                <div className="flex justify-end gap-3 pt-6 pb-12">
                     <button
                         type="submit"
                         onClick={() => setSubmitAction('save')}
                         disabled={isSaving}
-                        className="px-6 py-3 bg-white border border-[#B2F5EA] text-[#6B8E8B] font-bold rounded-xl hover:bg-[#F8FAFC] transition"
+                        className="px-6 py-3 bg-white border border-[#B2F5EA] text-[#1E8F86] font-bold rounded-xl hover:bg-[#F0FDFA] hover:border-[#40E0D0] transition-all duration-300 shadow-sm"
                     >
                         Simpan Draft
                     </button>
@@ -304,9 +364,11 @@ function ProposalForm({ initialData, onCancel, onSuccess, user, schoolName }: an
                         type="submit"
                         onClick={() => setSubmitAction('submit')}
                         disabled={isSaving}
-                        className="px-6 py-3 bg-[#40E0D0] text-white font-bold rounded-xl hover:bg-[#2CB1A6] transition shadow-lg shadow-[#40E0D0]/20 flex items-center gap-2"
+                        className="px-8 py-3 bg-gradient-to-r from-[#40E0D0] to-[#1E8F86] text-white font-bold rounded-xl hover:shadow-xl hover:shadow-[#40E0D0]/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2"
                     >
-                        {isSaving ? 'Memproses...' : (
+                        {isSaving ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
                             <><Upload size={18} /> Kirim Pengajuan</>
                         )}
                     </button>
@@ -427,8 +489,11 @@ function formatRupiah(n: number) {
 
 function Section({ title, children }: any) {
     return (
-        <div className="bg-white p-6 md:p-8 rounded-2xl border border-[#B2F5EA] shadow-sm hover:shadow-md transition-shadow">
-            <h2 className="text-lg font-bold text-[#1E8F86] mb-6 pb-2 border-b border-[#F1F5F9]">{title}</h2>
+        <div className="bg-white p-6 md:p-8 rounded-3xl border border-[#B2F5EA]/50 shadow-sm hover:shadow-md transition-all duration-500 bg-gradient-to-br from-white to-[#F0FDFA]/20">
+            <h2 className="text-sm font-black uppercase tracking-[0.1em] text-[#1E8F86] mb-8 flex items-center gap-3">
+                <span className="w-8 h-1 bg-[#40E0D0] rounded-full"></span>
+                {title}
+            </h2>
             {children}
         </div>
     );
@@ -469,7 +534,9 @@ function CurrencyField({ label, name, setValue, watch, placeholder, disabled }: 
     );
 }
 
-function AutoField({ label, register, name, disabled, placeholder, type = "text" }: any) {
+function AutoField({ label, register, name, disabled, readOnly, placeholder, type = "text" }: any) {
+    const isLocked = disabled || readOnly;
+
     return (
         <div>
             <label className="text-sm font-semibold text-[#0F2F2E] mb-2 block">{label}</label>
@@ -477,10 +544,11 @@ function AutoField({ label, register, name, disabled, placeholder, type = "text"
                 <textarea
                     rows={1}
                     disabled={disabled}
+                    readOnly={readOnly}
                     placeholder={placeholder}
                     {...(register ? register(name) : {})}
                     className={`w-full px-4 py-3 h-[50px] rounded-xl outline-none resize-none transition text-sm font-medium
-                    ${disabled
+                    ${isLocked
                             ? 'bg-[#F1F5F9] text-[#64748B] border border-transparent cursor-not-allowed'
                             : 'bg-[#F8FAFC] text-[#0F2F2E] border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1]'
                         }`}
@@ -489,21 +557,27 @@ function AutoField({ label, register, name, disabled, placeholder, type = "text"
                 <input
                     type={type}
                     disabled={disabled}
+                    readOnly={readOnly}
                     placeholder={placeholder}
                     {...(register ? register(name) : {})}
-                    className="w-full px-4 py-3 h-[50px] bg-[#F8FAFC] text-[#0F2F2E] rounded-xl outline-none border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1] transition text-sm font-medium"
+                    className={`w-full px-4 py-3 h-[50px] rounded-xl outline-none transition text-sm font-medium
+                    ${isLocked
+                            ? 'bg-[#F1F5F9] text-[#64748B] border border-transparent cursor-not-allowed'
+                            : 'bg-[#F8FAFC] text-[#0F2F2E] border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1]'
+                        }`}
                 />
             )}
         </div>
     );
 }
 
-function DateField({ label, register, name }: any) {
+function DateField({ label, register, name, min }: any) {
     return (
         <div>
             <label className="text-sm font-semibold text-[#0F2F2E] mb-2 block">{label}</label>
             <input
                 type="date"
+                min={min}
                 {...(register ? register(name) : {})}
                 className="w-full px-4 py-3 h-[50px] bg-[#F8FAFC] text-[#0F2F2E] rounded-xl outline-none border border-[#E2E8F0] focus:border-[#40E0D0] focus:bg-white focus:ring-2 focus:ring-[#CCFBF1] transition text-sm font-medium"
             />
@@ -564,44 +638,48 @@ function UploadBox({ label, name, setValue, watch, multiple = false }: any) {
     };
 
     return (
-        <div>
-            <label className="text-sm font-semibold text-[#0F2F2E] mb-2 block">
-                {label} {multiple && <span className="text-[#6B8E8B] font-normal text-xs">(Bisa upload banyak)</span>}
+        <div className="group">
+            <label className="text-sm font-semibold text-[#0F2F2E] mb-2 block group-hover:text-[#1E8F86] transition-colors">
+                {label} {multiple && <span className="text-[#6B8E8B] font-normal text-[10px] bg-gray-100 px-1.5 py-0.5 rounded ml-1">Multi</span>}
             </label>
 
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-2.5">
                 {/* File List */}
                 {files.length > 0 && files.map((url: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
-                        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                            <FileCheck size={16} className="text-[#1E8F86]" />
+                    <div key={idx} className="flex items-center gap-3 p-2 bg-white border border-[#CCFBF1] rounded-xl shadow-sm hover:border-[#40E0D0] transition-colors group/file">
+                        <div className="w-7 h-7 rounded-lg bg-[#E6FFFA] flex items-center justify-center text-[#1E8F86] shrink-0">
+                            <FileCheck size={14} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-[#0F2F2E] truncate">File Terlampir {files.length > 1 ? idx + 1 : ''}</p>
-                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#1E8F86] hover:underline flex items-center gap-1">
-                                <ExternalLink size={10} /> Lihat di tab baru
+                            <p className="text-[10px] font-bold text-[#0F2F2E] truncate">File Lampiran {files.length > 1 ? idx + 1 : ''}</p>
+                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-[9px] text-[#6B8E8B] hover:text-[#40E0D0] flex items-center gap-1 transition-colors">
+                                <ExternalLink size={8} /> Buka Preview
                             </a>
                         </div>
                         {setValue && (
-                            <button onClick={() => removeFile(idx)} className="p-1.5 text-gray-400 hover:text-red-500 transition">
-                                <X size={14} />
+                            <button onClick={() => removeFile(idx)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                <X size={12} />
                             </button>
                         )}
                     </div>
                 ))}
 
-                {/* Dropzone / Button */}
+                {/* Compact Dropzone */}
                 {setValue && (multiple || files.length === 0) && (
                     <div
-                        onClick={() => ref.current?.click()}
-                        className={`border-2 border-dashed border-[#B2F5EA] rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#F0FDFA] transition
-                        ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() => !uploading && ref.current?.click()}
+                        className={`border-2 border-dashed border-[#B2F5EA] rounded-xl p-3 flex items-center justify-center gap-3 cursor-pointer hover:bg-[#F0FDFA] hover:border-[#40E0D0] transition-all
+                        ${uploading ? 'opacity-50 cursor-not-allowed border-[#40E0D0]' : ''}`}
                     >
                         <input type="file" ref={ref} onChange={handleFile} className="hidden" />
-                        <div className="w-10 h-10 bg-[#E6FFFA] rounded-full flex items-center justify-center text-[#1E8F86]">
-                            <Plus size={20} />
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors
+                            ${uploading ? 'bg-gray-100 text-gray-400 animate-pulse' : 'bg-[#E6FFFA] text-[#1E8F86] group-hover:bg-[#40E0D0] group-hover:text-white'}`}>
+                            {uploading ? <Clock size={16} /> : <Plus size={16} />}
                         </div>
-                        <p className="text-xs font-bold text-[#1E8F86]">{uploading ? 'Sedang mengupload...' : 'Klik untuk upload'}</p>
+                        <div className="text-left">
+                            <p className="text-[11px] font-bold text-[#0F2F2E]">{uploading ? 'Sedang mengupload...' : (files.length > 0 ? 'Tambah file lagi' : 'Pilih File')}</p>
+                            {!uploading && <p className="text-[9px] text-[#6B8E8B]">Format PDF/JPG (Maks 10MB)</p>}
+                        </div>
                     </div>
                 )}
             </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import { showConfirm } from "@/lib/swal";
 import {
   ArrowLeft, Check, X, FileText, Image as ImageIcon,
   MapPin, Phone, User as UserIcon, Calendar, DollarSign, Tag, Info,
@@ -77,7 +78,13 @@ export default function AdminDetailPage() {
   async function updateProposalStatus(nextStatus: 'approved' | 'rejected') {
     if (!id) return;
     const action = nextStatus === 'approved' ? 'menyetujui' : 'menolak';
-    if (!confirm(`Yakin ingin ${action} pengajuan ini?`)) return;
+    const isConfirmed = await showConfirm({
+      title: nextStatus === 'approved' ? 'Setujui Pengajuan?' : 'Tolak Pengajuan?',
+      text: `Yakin ingin ${action} pengajuan ini?`,
+      icon: nextStatus === 'approved' ? 'question' : 'warning',
+    });
+
+    if (!isConfirmed) return;
 
     try {
       await api.put(`/proposals/admin/${id}/status`, { status: nextStatus });

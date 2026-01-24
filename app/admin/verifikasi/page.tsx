@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import api from "@/lib/axios";
+import { showConfirm } from "@/lib/swal";
 
 type SchoolStatus = "approved" | "pending" | "rejected";
 
@@ -32,21 +34,10 @@ export default function AdminVerifikasiPage() {
   async function fetchProposals() {
     try {
       setLoading(true);
-      // Fetch all proposals (pending + others)
-      // Note: URL is absolute or proxied. Next.js rewriting /api to localhost:5000 usually
-      // But here we might need full URL if proxy not set for admin path? 
-      // Let's try direct fetch to backend port if client-side or use relative if proxy works.
-      // Assuming /api/proposals/admin/all works relative to Next.js if rewrites exist, 
-      // OR we use the direct backend URL if we know it.
-      // Let's use relative first, assuming next.config.js rewrites /api -> backend.
-      // If not, we might need a helper. existing files use `api` helper or direct fetch.
-      // Let's try direct fetch to port 5000 to be safe or check if we can use the `api` helper.
+      const res = await api.get('/proposals/admin/all');
 
-      const res = await fetch('http://localhost:5000/api/proposals/admin/all');
-      const data = await res.json();
-
-      if (Array.isArray(data)) {
-        setProposals(data);
+      if (Array.isArray(res.data)) {
+        setProposals(res.data);
       }
     } catch (err) {
       console.error("Failed to fetch proposals", err);
@@ -57,21 +48,18 @@ export default function AdminVerifikasiPage() {
   }
 
   async function updateStatus(id: string, status: SchoolStatus) {
-    if (!confirm(`Yakin ingin mengubah status menjadi ${status}?`)) return;
+    const isConfirmed = await showConfirm({
+      title: status === 'approved' ? 'Setujui Pengajuan?' : 'Tolak Pengajuan?',
+      text: `Yakin ingin mengubah status menjadi ${status}?`,
+      icon: status === 'approved' ? 'question' : 'warning',
+    });
+
+    if (!isConfirmed) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/proposals/admin/${id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-
-      if (res.ok) {
-        toast.success(`Status berhasil diubah: ${status}`);
-        fetchProposals(); // Refresh list
-      } else {
-        throw new Error("Gagal update");
-      }
+      await api.put(`/proposals/admin/${id}/status`, { status });
+      toast.success(`Status berhasil diubah: ${status}`);
+      fetchProposals(); // Refresh list
     } catch (err) {
       console.error(err);
       toast.error("Terjadi kesalahan saat update status");
@@ -206,6 +194,12 @@ export default function AdminVerifikasiPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => window.location.href = `/admin/detail?id=${s._id}`}
+                              className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 text-xs font-bold hover:bg-blue-100 transition shadow-sm"
+                            >
+                              Detail
+                            </button>
                             <button
                               onClick={() => updateStatus(s._id, "approved")}
                               className="px-3 py-1.5 rounded-lg bg-[#22C55E] text-white text-xs font-bold shadow-md shadow-[#22C55E]/20 hover:scale-105 active:scale-95 transition"

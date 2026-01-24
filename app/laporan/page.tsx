@@ -6,11 +6,16 @@ import { usePathname, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import Sidebar from '@/app/components/Sidebar';
+import { showConfirm } from '@/lib/swal';
+import Sidebar from '@/components/Sidebar';
 import Header from '@/app/components/Header';
 import {
-  Upload, Plus, FileCheck, Trash2, ExternalLink, Clock, FileText, ChevronRight
+  Upload, Plus, FileCheck, Trash2, ExternalLink, Clock, FileText, ChevronRight, Download, FileSpreadsheet
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 /* ================= PAGE CONTENT ================= */
 
@@ -27,11 +32,18 @@ export default function LaporanPage() {
   const [approvedProposals, setApprovedProposals] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
   const [loadingProposals, setLoadingProposals] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm();
   const [submitStatus, setSubmitStatus] = useState<'draft' | 'submitted'>('draft');
+
+  // Register custom fields
+  useEffect(() => {
+    register('amount', { required: true });
+    register('evidence');
+  }, [register]);
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -102,13 +114,22 @@ export default function LaporanPage() {
     try {
       const payload = {
         ...data,
-        amount: Number(String(data.amount).replace(/\./g, '')),
+        amount: Number(String(data.amount).replace(/[^0-9]/g, '')),
         status: submitStatus
       };
 
-      await api.post('/reports', payload);
-      toast.success(submitStatus === 'draft' ? "Draft tersimpan" : "Laporan berhasil dikirim!");
+      if (editingId) {
+        // Update existing report
+        await api.put(`/reports/${editingId}`, payload);
+        toast.success("Laporan diperbarui!");
+      } else {
+        // Create new report
+        await api.post('/reports', payload);
+        toast.success(submitStatus === 'draft' ? "Draft tersimpan" : "Laporan berhasil dikirim!");
+      }
+
       reset();
+      setEditingId(null);
       fetchReports();
       scrollToHistory();
 
@@ -119,8 +140,56 @@ export default function LaporanPage() {
     }
   };
 
+  const handleEditReport = (item: any) => {
+    setEditingId(item._id);
+    setValue('proposalId', item.proposal._id || item.proposal);
+    setValue('title', item.title);
+    setValue('transactionDate', item.transactionDate.split('T')[0]);
+    setValue('description', item.description);
+    setValue('recipient', item.recipient);
+
+    // Amount formatting
+    const formattedAmount = new Intl.NumberFormat("id-ID").format(item.amount);
+    setValue('amount', formattedAmount);
+
+    setValue('evidence', item.evidence);
+
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast("Mode Edit Aktif", { icon: '✏️' });
+  };
+
+  const handleSendReport = async (id: string) => {
+    const isConfirmed = await showConfirm({
+      title: 'Kirim Laporan?',
+      text: 'Kirim laporan ini? Data tidak dapat diubah setelah dikirim.',
+      icon: 'question'
+    });
+    if (!isConfirmed) return;
+    try {
+      await api.put(`/reports/${id}`, { status: 'submitted' });
+      toast.success("Laporan terkirim!");
+      fetchReports();
+    } catch (error) {
+      toast.error("Gagal mengirim laporan");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    reset();
+  };
+
   const handleDeleteReport = async (id: string) => {
-    if (!confirm("Hapus laporan ini?")) return;
+    const isConfirmed = await showConfirm({
+      title: 'Hapus Laporan?',
+      text: 'Hapus laporan ini?',
+      icon: 'warning',
+      confirmButtonText: 'Ya, Hapus',
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#1E8F86',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/reports/${id}`);
       toast.success("Laporan dihapus");
@@ -133,6 +202,68 @@ export default function LaporanPage() {
   const scrollToHistory = () => {
     const element = document.getElementById('riwayat-laporan');
     element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // --- EXPORT FUNCTIONS ---
+
+  const handleExportPDF = () => {
+    if (reports.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(18);
+    doc.text(`Laporan Pertanggungjawaban - ${officialSchool?.nama || user?.schoolName}`, 14, 20);
+    doc.setFontSize(12);
+    doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID')}`, 14, 28);
+
+    // Table Data
+    const tableData = reports.map((r, index) => [
+      index + 1,
+      new Date(r.transactionDate).toLocaleDateString('id-ID'),
+      r.title,
+      r.description,
+      formatRupiah(r.amount),
+      r.status === 'approved' ? 'Disetujui' : r.status === 'submitted' ? 'Menunggu' : 'Draft'
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['No', 'Tanggal', 'Judul', 'Deskripsi', 'Nominal', 'Status']],
+      body: tableData,
+    });
+
+    doc.save(`laporan-sekolah-${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("PDF berhasil diunduh");
+  };
+
+  const handleExportExcel = () => {
+    if (reports.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(reports.map((r, i) => ({
+      No: i + 1,
+      Tanggal: new Date(r.transactionDate).toLocaleDateString('id-ID'),
+      Judul: r.title,
+      Deskripsi: r.description,
+      Penerima: r.recipient || '-',
+      Nominal: r.amount,
+      Status: r.status
+    })));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+
+    saveAs(data, `laporan-sekolah-${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success("Excel berhasil diunduh");
   };
 
   if (!user) return null;
@@ -173,7 +304,13 @@ export default function LaporanPage() {
           </div>
 
           {/* Report Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 md:p-8 rounded-2xl border border-[#B2F5EA] shadow-sm">
+          <form onSubmit={handleSubmit(onSubmit)} className={`bg-white p-6 md:p-8 rounded-2xl border ${editingId ? 'border-yellow-400 ring-4 ring-yellow-50' : 'border-[#B2F5EA]'} shadow-sm transition-all`}>
+            {editingId && (
+              <div className="mb-4 bg-yellow-50 text-yellow-700 px-4 py-2 rounded-lg flex justify-between items-center">
+                <span className="text-sm font-bold flex items-center gap-2"><FileText size={16} /> Sedang Mengedit Laporan</span>
+                <button type="button" onClick={handleCancelEdit} className="text-xs underline hover:text-yellow-900">Batal Edit</button>
+              </div>
+            )}
             <div className="space-y-6">
               {/* Select Proposal Section */}
               <div>
@@ -222,29 +359,67 @@ export default function LaporanPage() {
               </Section>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-[#F1F5F9] mt-8">
-                <button
-                  type="submit"
-                  onClick={() => setSubmitStatus('draft')}
-                  disabled={isSubmitting}
-                  className="px-6 py-3 bg-[#F1F5F9] text-[#64748B] font-bold rounded-xl hover:bg-[#E2E8F0] transition flex items-center gap-2"
-                >
-                  Simpan Draft
-                </button>
-                <button
-                  type="submit"
-                  onClick={() => setSubmitStatus('submitted')}
-                  disabled={isSubmitting}
-                  className="px-6 py-3 bg-[#40E0D0] text-white font-bold rounded-xl hover:bg-[#2CB1A6] transition shadow-lg shadow-[#40E0D0]/20 flex items-center gap-2"
-                >
-                  <Upload size={18} /> {isSubmitting ? 'Mengirim...' : 'Kirim Laporan'}
-                </button>
+                {editingId ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      onClick={() => setSubmitStatus('draft')} // Maintain status
+                      disabled={isSubmitting}
+                      className="px-6 py-3 bg-[#EAB308] text-white font-bold rounded-xl hover:bg-[#CA8A04] transition shadow-lg shadow-yellow-500/20 flex items-center gap-2"
+                    >
+                      <FileText size={18} /> Simpan Perubahan
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="submit"
+                      onClick={() => setSubmitStatus('draft')}
+                      disabled={isSubmitting}
+                      className="px-6 py-3 bg-[#F1F5F9] text-[#64748B] font-bold rounded-xl hover:bg-[#E2E8F0] transition flex items-center gap-2"
+                    >
+                      Simpan Draft
+                    </button>
+                    <button
+                      type="submit"
+                      onClick={() => setSubmitStatus('submitted')}
+                      disabled={isSubmitting}
+                      className="px-6 py-3 bg-[#40E0D0] text-white font-bold rounded-xl hover:bg-[#2CB1A6] transition shadow-lg shadow-[#40E0D0]/20 flex items-center gap-2"
+                    >
+                      <Upload size={18} /> {isSubmitting ? 'Mengirim...' : 'Kirim Laporan'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </form>
 
           {/* Report List History */}
           <div className="pt-8" id="riwayat-laporan">
-            <h2 className="text-lg font-bold text-[#0F2F2E] mb-4">Laporan Terbaru</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-[#0F2F2E]">Laporan Terbaru</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportPDF}
+                  className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-200 hover:bg-red-100 transition flex items-center gap-2"
+                >
+                  <FileText size={14} /> PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-green-200 hover:bg-green-100 transition flex items-center gap-2"
+                >
+                  <FileSpreadsheet size={14} /> Excel
+                </button>
+              </div>
+            </div>
 
             {reports.length === 0 ? (
               <div className="bg-white p-8 rounded-2xl border border-dashed border-[#B2F5EA] text-center">
@@ -260,11 +435,7 @@ export default function LaporanPage() {
                   <div key={item._id} className="bg-white p-6 rounded-2xl border border-[#B2F5EA] hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide
-                                                      ${item.status === 'draft' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-600'}
-                                                  `}>
-                          {item.status === 'draft' ? 'Draft' : 'Terkirim'}
-                        </span>
+                        <StatusPill status={item.status} />
                         <span className="text-xs text-[#6B8E8B]">{new Date(item.transactionDate).toLocaleDateString()}</span>
                       </div>
                       <h3 className="font-bold text-[#0F2F2E] text-lg">{item.title}</h3>
@@ -278,10 +449,19 @@ export default function LaporanPage() {
                           <ExternalLink size={12} /> Bukti
                         </a>
                       )}
+
                       {item.status === 'draft' && (
-                        <button onClick={() => handleDeleteReport(item._id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition" title="Hapus">
-                          <Trash2 size={18} />
-                        </button>
+                        <>
+                          <button onClick={() => handleEditReport(item)} className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition" title="Edit">
+                            <FileText size={18} />
+                          </button>
+                          <button onClick={() => handleSendReport(item._id)} className="p-2 text-green-500 hover:bg-green-50 rounded-lg transition" title="Kirim Sekarang">
+                            <Upload size={18} />
+                          </button>
+                          <button onClick={() => handleDeleteReport(item._id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition" title="Hapus">
+                            <Trash2 size={18} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -431,5 +611,22 @@ function UploadBox({ label, name, setValue, watch }: any) {
         </>
       )}
     </div>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const config: any = {
+    draft: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Draft' },
+    submitted: { bg: 'bg-blue-100', text: 'text-blue-600', label: 'Menunggu ACC' },
+    approved: { bg: 'bg-green-100', text: 'text-green-600', label: 'Disetujui' },
+    rejected: { bg: 'bg-red-100', text: 'text-red-500', label: 'Ditolak' }
+  };
+
+  const { bg, text, label } = config[status] || config.draft;
+
+  return (
+    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${bg} ${text} border border-current opacity-70`}>
+      {label}
+    </span>
   );
 }
